@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Stylized static preview shown in the watch face picker. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="192dp"
+    android:height="192dp"
+    android:viewportWidth="192"
+    android:viewportHeight="192">
+
+    <!-- Background disc -->
+    <path
+        android:fillColor="#10101A"
+        android:pathData="M96,4 a92,92 0 1,0 0.001,0 z" />
+
+    <!-- Outer ring -->
+    <path
+        android:strokeColor="#8A7A52"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:pathData="M96,10 a86,86 0 1,0 0.001,0 z" />
+
+    <!-- Major hour ticks (12 / 3 / 6 / 9) -->
+    <path android:strokeColor="#E8C36A" android:strokeWidth="3"
+        android:pathData="M96,14 L96,26" />
+    <path android:strokeColor="#E8C36A" android:strokeWidth="3"
+        android:pathData="M178,96 L166,96" />
+    <path android:strokeColor="#E8C36A" android:strokeWidth="3"
+        android:pathData="M96,178 L96,166" />
+    <path android:strokeColor="#E8C36A" android:strokeWidth="3"
+        android:pathData="M14,96 L26,96" />
+
+    <!-- Hour hand (pointing to ~10) -->
+    <path
+        android:strokeColor="#E8C36A"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:pathData="M96,96 L60,70" />
+
+    <!-- Minute hand (pointing to ~2) -->
+    <path
+        android:strokeColor="#E8C36A"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M96,96 L136,46" />
+
+    <!-- Second hand -->
+    <path
+        android:strokeColor="#8A7A52"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M96,96 L96,158" />
+
+    <!-- Center dot -->
+    <path
+        android:fillColor="#E8C36A"
+        android:pathData="M96,90 a6,6 0 1,0 0.001,0 z" />
+</vector>

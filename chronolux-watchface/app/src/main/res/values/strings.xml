@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ChronoLux</string>
+    <string name="config_title">ChronoLux Settings</string>
+    <string name="config_complications_header">Complications</string>
+    <string name="config_edit_complication">Edit slot %1$d</string>
+
+    <string name="setting_color_theme">Color theme</string>
+    <string name="setting_color_theme_description">Accent and background palette</string>
+    <string name="setting_layout_mode">Layout</string>
+    <string name="setting_layout_mode_description">Analog, digital or hybrid time display</string>
+    <string name="setting_show_ticks">Minute ticks</string>
+    <string name="setting_show_ticks_description">Show the minute tick ring</string>
+
+    <string name="layout_analog">Analog</string>
+    <string name="layout_digital">Digital</string>
+    <string name="layout_hybrid">Hybrid</string>
+
+    <string name="theme_midnight_gold">Midnight Gold</string>
+    <string name="theme_ocean">Ocean</string>
+    <string name="theme_crimson">Crimson</string>
+    <string name="theme_forest">Forest</string>
+</resources>

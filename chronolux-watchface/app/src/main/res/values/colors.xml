@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="launcher_background">#06060A</color>
+    <color name="complication_text">#E8E6E0</color>
+    <color name="complication_title">#9A9890</color>
+    <color name="complication_icon">#E8C36A</color>
+    <color name="complication_border">#3A3A44</color>
+    <color name="complication_ranged_value">#E8C36A</color>
+</resources>

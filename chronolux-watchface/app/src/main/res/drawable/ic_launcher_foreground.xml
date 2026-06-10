@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Watch dial -->
+    <path
+        android:strokeColor="#E8C36A"
+        android:strokeWidth="3"
+        android:fillColor="#10101A"
+        android:pathData="M54,22 a32,32 0 1,0 0.001,0 z" />
+
+    <!-- Hands forming a "C" angle -->
+    <path
+        android:strokeColor="#E8C36A"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M54,54 L54,34" />
+    <path
+        android:strokeColor="#E8C36A"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M54,54 L70,62" />
+
+    <!-- Center dot -->
+    <path
+        android:fillColor="#E8C36A"
+        android:pathData="M54,51 a3,3 0 1,0 0.001,0 z" />
+</vector>
