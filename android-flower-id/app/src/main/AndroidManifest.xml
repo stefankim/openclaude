@@ -34,6 +34,13 @@
             android:theme="@style/Theme.FlowerID.Settings"
             android:parentActivityName=".MainActivity" />
 
+        <activity
+            android:name=".FavoritesActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.FlowerID.Settings"
+            android:parentActivityName=".MainActivity" />
+
     </application>
 
 </manifest>

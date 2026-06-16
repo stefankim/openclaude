@@ -55,10 +55,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var learnMoreLink: TextView
     private lateinit var loadingOverlay: View
     private lateinit var closeResultButton: ImageButton
+    private lateinit var favoriteButton: ImageButton
     private lateinit var scanAgainButton: Button
     private lateinit var instructionText: TextView
 
     private var lastCapturedBitmap: Bitmap? = null
+    private var currentCommonName: String? = null
+    private var currentScientificName: String? = null
+    private var currentConfidence: Double = 0.0
+    private var currentWeedInfo: WeedDatabase.WeedInfo? = null
+    private var currentDescription: String? = null
+    private var currentWikipediaUrl: String? = null
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
     private val client = OkHttpClient.Builder()
@@ -89,6 +96,7 @@ class MainActivity : AppCompatActivity() {
         learnMoreLink = findViewById(R.id.learnMoreLink)
         loadingOverlay = findViewById(R.id.loadingOverlay)
         closeResultButton = findViewById(R.id.closeResultButton)
+        favoriteButton = findViewById(R.id.favoriteButton)
         scanAgainButton = findViewById(R.id.scanAgainButton)
         instructionText = findViewById(R.id.instructionText)
 
@@ -100,8 +108,12 @@ class MainActivity : AppCompatActivity() {
         captureButton.setOnClickListener { takePhoto() }
         closeResultButton.setOnClickListener { hideResult() }
         scanAgainButton.setOnClickListener { hideResult() }
+        favoriteButton.setOnClickListener { toggleFavorite() }
         findViewById<ImageButton>(R.id.settingsButton).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
+        }
+        findViewById<ImageButton>(R.id.favoritesListButton).setOnClickListener {
+            startActivity(Intent(this, FavoritesActivity::class.java))
         }
 
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -287,6 +299,14 @@ class MainActivity : AppCompatActivity() {
         scientificNameText.text = scientificName
         confidenceText.text = "Confidence: ${"%.0f".format(confidence)}%"
 
+        currentCommonName = commonName
+        currentScientificName = scientificName
+        currentConfidence = confidence
+        currentWeedInfo = weedInfo
+        currentDescription = null
+        currentWikipediaUrl = null
+        updateFavoriteButtonState()
+
         if (weedInfo != null) {
             weedStatusBanner.setBackgroundColor(0xFFC62828.toInt())
             weedStatusIcon.text = "☠"
@@ -344,6 +364,8 @@ class MainActivity : AppCompatActivity() {
                         return
                     }
                     runOnUiThread {
+                        currentDescription = extract
+                        currentWikipediaUrl = pageUrl
                         descriptionText.text = extract
                         if (pageUrl != null) {
                             learnMoreLink.visibility = View.VISIBLE
@@ -358,6 +380,35 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         })
+    }
+
+    private fun toggleFavorite() {
+        val scientificName = currentScientificName ?: return
+        if (FavoritesStore.isFavorite(this, scientificName)) {
+            FavoritesStore.remove(this, scientificName)
+            Toast.makeText(this, "Removed from favorites", Toast.LENGTH_SHORT).show()
+        } else {
+            FavoritesStore.add(
+                this,
+                commonName = currentCommonName ?: scientificName,
+                scientificName = scientificName,
+                confidence = currentConfidence,
+                isWeed = currentWeedInfo != null,
+                weedReason = currentWeedInfo?.reason,
+                description = currentDescription,
+                wikipediaUrl = currentWikipediaUrl,
+                bitmap = lastCapturedBitmap
+            )
+            Toast.makeText(this, "Added to favorites", Toast.LENGTH_SHORT).show()
+        }
+        updateFavoriteButtonState()
+    }
+
+    private fun updateFavoriteButtonState() {
+        val isFav = currentScientificName?.let { FavoritesStore.isFavorite(this, it) } ?: false
+        favoriteButton.setImageResource(
+            if (isFav) R.drawable.ic_star_filled else R.drawable.ic_star_outline
+        )
     }
 
     private fun hideResult() {
