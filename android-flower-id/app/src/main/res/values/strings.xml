@@ -4,6 +4,8 @@
     <string name="instruction">Point at a flower or plant and tap to identify</string>
     <string name="identifying">Identifying plant…</string>
     <string name="scan_again">Scan Another Plant</string>
+    <string name="learn_more">Read more on Wikipedia →</string>
+    <string name="loading_description">Loading description…</string>
 
     <!-- Settings -->
     <string name="setup_title">Connect to PlantNet API</string>

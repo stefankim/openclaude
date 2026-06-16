@@ -107,12 +107,18 @@
         android:background="#99000000"
         android:visibility="gone">
 
-        <LinearLayout
+        <ScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            android:orientation="vertical"
+            android:maxHeight="560dp"
             android:background="@drawable/result_card_bg"
+            android:fillViewport="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
             android:paddingBottom="32dp">
 
             <!-- Drag handle -->
@@ -123,17 +129,29 @@
                 android:layout_marginTop="12dp"
                 android:background="#DDDDDD" />
 
-            <!-- Close button -->
-            <ImageButton
-                android:id="@+id/closeResultButton"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_gravity="end"
-                android:layout_marginEnd="12dp"
-                android:layout_marginTop="4dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_close"
-                android:contentDescription="Close" />
+            <!-- Flower photo with close button overlay -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:layout_marginTop="10dp">
+
+                <ImageView
+                    android:id="@+id/flowerImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="Captured plant photo" />
+
+                <ImageButton
+                    android:id="@+id/closeResultButton"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_gravity="top|end"
+                    android:layout_margin="10dp"
+                    android:background="@drawable/btn_icon_bg"
+                    android:src="@drawable/ic_close"
+                    android:contentDescription="Close" />
+            </FrameLayout>
 
             <!-- Weed status banner -->
             <LinearLayout
@@ -144,6 +162,7 @@
                 android:gravity="center_vertical"
                 android:paddingHorizontal="20dp"
                 android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="16dp"
                 android:layout_marginBottom="16dp"
                 android:background="@drawable/status_banner_bg">
 
@@ -205,6 +224,32 @@
                 android:layout_marginTop="12dp"
                 android:layout_marginBottom="12dp" />
 
+            <!-- Short description (from Wikipedia) -->
+            <TextView
+                android:id="@+id/descriptionText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="14sp"
+                android:textColor="#424242"
+                android:lineSpacingMultiplier="1.4"
+                android:paddingHorizontal="20dp"
+                android:visibility="gone" />
+
+            <!-- Link to full Wikipedia article -->
+            <TextView
+                android:id="@+id/learnMoreLink"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/learn_more"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#1565C0"
+                android:background="?attr/selectableItemBackground"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="8dp"
+                android:layout_marginTop="4dp"
+                android:visibility="gone" />
+
             <!-- Weed reason -->
             <TextView
                 android:id="@+id/weedReasonText"
@@ -214,6 +259,7 @@
                 android:textColor="#424242"
                 android:lineSpacingMultiplier="1.4"
                 android:paddingHorizontal="20dp"
+                android:layout_marginTop="8dp"
                 android:visibility="gone" />
 
             <!-- Scan again button -->
@@ -229,6 +275,7 @@
                 android:textSize="15sp"
                 style="@style/Widget.Material3.Button" />
         </LinearLayout>
+        </ScrollView>
     </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

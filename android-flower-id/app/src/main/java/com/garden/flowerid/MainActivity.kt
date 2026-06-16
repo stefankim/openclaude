@@ -6,10 +6,12 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -41,6 +43,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var viewFinder: PreviewView
     private lateinit var captureButton: ImageButton
     private lateinit var resultCard: View
+    private lateinit var flowerImage: ImageView
     private lateinit var plantNameText: TextView
     private lateinit var scientificNameText: TextView
     private lateinit var confidenceText: TextView
@@ -48,11 +51,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var weedStatusIcon: TextView
     private lateinit var weedStatusText: TextView
     private lateinit var weedReasonText: TextView
+    private lateinit var descriptionText: TextView
+    private lateinit var learnMoreLink: TextView
     private lateinit var loadingOverlay: View
     private lateinit var closeResultButton: ImageButton
     private lateinit var scanAgainButton: Button
     private lateinit var instructionText: TextView
 
+    private var lastCapturedBitmap: Bitmap? = null
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
     private val client = OkHttpClient.Builder()
@@ -71,6 +77,7 @@ class MainActivity : AppCompatActivity() {
         viewFinder = findViewById(R.id.viewFinder)
         captureButton = findViewById(R.id.captureButton)
         resultCard = findViewById(R.id.resultCard)
+        flowerImage = findViewById(R.id.flowerImage)
         plantNameText = findViewById(R.id.plantNameText)
         scientificNameText = findViewById(R.id.scientificNameText)
         confidenceText = findViewById(R.id.confidenceText)
@@ -78,6 +85,8 @@ class MainActivity : AppCompatActivity() {
         weedStatusIcon = findViewById(R.id.weedStatusIcon)
         weedStatusText = findViewById(R.id.weedStatusText)
         weedReasonText = findViewById(R.id.weedReasonText)
+        descriptionText = findViewById(R.id.descriptionText)
+        learnMoreLink = findViewById(R.id.learnMoreLink)
         loadingOverlay = findViewById(R.id.loadingOverlay)
         closeResultButton = findViewById(R.id.closeResultButton)
         scanAgainButton = findViewById(R.id.scanAgainButton)
@@ -186,6 +195,8 @@ class MainActivity : AppCompatActivity() {
             )
         else bitmap
 
+        lastCapturedBitmap = scaled
+
         val stream = ByteArrayOutputStream()
         scaled.compress(Bitmap.CompressFormat.JPEG, 80, stream)
 
@@ -271,6 +282,7 @@ class MainActivity : AppCompatActivity() {
         confidence: Double,
         weedInfo: WeedDatabase.WeedInfo?
     ) {
+        flowerImage.setImageBitmap(lastCapturedBitmap)
         plantNameText.text = commonName
         scientificNameText.text = scientificName
         confidenceText.text = "Confidence: ${"%.0f".format(confidence)}%"
@@ -290,6 +302,62 @@ class MainActivity : AppCompatActivity() {
 
         resultCard.visibility = View.VISIBLE
         instructionText.visibility = View.GONE
+
+        fetchDescription(commonName, scientificName)
+    }
+
+    private fun fetchDescription(commonName: String, scientificName: String) {
+        descriptionText.text = getString(R.string.loading_description)
+        descriptionText.visibility = View.VISIBLE
+        learnMoreLink.visibility = View.GONE
+
+        fetchWikipediaSummary(commonName) { found ->
+            if (!found) fetchWikipediaSummary(scientificName) { foundFallback ->
+                if (!foundFallback) runOnUiThread { descriptionText.visibility = View.GONE }
+            }
+        }
+    }
+
+    private fun fetchWikipediaSummary(title: String, onDone: (Boolean) -> Unit) {
+        val url = "https://en.wikipedia.org/api/rest_v1/page/summary/" +
+            Uri.encode(title.replace(" ", "_"))
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", "GardenWeedID-Android/1.0")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: okhttp3.Call, e: IOException) = onDone(false)
+
+            override fun onResponse(call: okhttp3.Call, response: Response) {
+                if (!response.isSuccessful) {
+                    onDone(false)
+                    return
+                }
+                try {
+                    val obj = JsonParser.parseString(response.body?.string()).asJsonObject
+                    val extract = obj.get("extract")?.asString
+                    val pageUrl = obj.getAsJsonObject("content_urls")
+                        ?.getAsJsonObject("desktop")?.get("page")?.asString
+                    if (extract.isNullOrBlank()) {
+                        onDone(false)
+                        return
+                    }
+                    runOnUiThread {
+                        descriptionText.text = extract
+                        if (pageUrl != null) {
+                            learnMoreLink.visibility = View.VISIBLE
+                            learnMoreLink.setOnClickListener {
+                                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(pageUrl)))
+                            }
+                        }
+                    }
+                    onDone(true)
+                } catch (e: Exception) {
+                    onDone(false)
+                }
+            }
+        })
     }
 
     private fun hideResult() {
