@@ -8,6 +8,9 @@ on:
       - 'android-flower-id/**'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Debug APK
@@ -41,8 +44,21 @@ jobs:
           path: android-flower-id/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-      - name: Show APK info
-        run: |
-          APK=android-flower-id/app/build/outputs/apk/debug/app-debug.apk
-          echo "APK size: $(du -sh $APK | cut -f1)"
-          echo "APK path: $APK"
+      - name: Rename APK
+        run: cp android-flower-id/app/build/outputs/apk/debug/app-debug.apk GardenWeedID.apk
+
+      - name: Publish APK to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: flower-id-latest
+          name: Garden Weed ID (latest build)
+          body: |
+            Latest debug build of the Garden Weed ID Android app.
+
+            **To install:** tap `GardenWeedID.apk` below on your Android phone,
+            then allow "Install from unknown sources" when prompted.
+
+            On first launch, open Settings (gear icon) and paste a free
+            PlantNet API key from https://my.plantnet.org
+          files: GardenWeedID.apk
+          prerelease: true
