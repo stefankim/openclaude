@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="garden_green">#2E7D32</color>
+    <color name="garden_green_dark">#1B5E20</color>
+    <color name="weed_red">#C62828</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="text_primary">#1A1A1A</color>
+    <color name="text_secondary">#757575</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="background">#F8F8F8</color>
+</resources>

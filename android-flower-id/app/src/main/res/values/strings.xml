@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Garden Weed ID</string>
+    <string name="instruction">Point at a flower or plant and tap to identify</string>
+    <string name="identifying">Identifying plant…</string>
+    <string name="scan_again">Scan Another Plant</string>
+
+    <!-- Settings -->
+    <string name="setup_title">Connect to PlantNet API</string>
+    <string name="setup_description">This app uses the free PlantNet API to identify plants.\n\n1. Go to: my.plantnet.org\n2. Sign up for a free account\n3. Copy your API key and paste it below.\n\nFree tier: 500 identifications per day.</string>
+    <string name="step1_label">STEP 1 — Get your free API key</string>
+    <string name="step1_desc">Visit my.plantnet.org → Sign Up → My Profile → API Keys</string>
+    <string name="step2_label">STEP 2 — Paste your API key below</string>
+    <string name="api_key_hint">Paste your PlantNet API key here</string>
+    <string name="save_key">Save &amp; Start Identifying</string>
+    <string name="free_note">PlantNet is a free, open scientific project. No credit card needed.</string>
+</resources>

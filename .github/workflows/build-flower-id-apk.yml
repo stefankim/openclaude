@@ -1,0 +1,48 @@
+name: Build Flower ID APK
+
+on:
+  push:
+    branches:
+      - 'claude/flower-id-android-app-cog6lz'
+    paths:
+      - 'android-flower-id/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x android-flower-id/gradlew
+
+      - name: Build Debug APK
+        working-directory: android-flower-id
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GardenWeedID-debug
+          path: android-flower-id/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Show APK info
+        run: |
+          APK=android-flower-id/app/build/outputs/apk/debug/app-debug.apk
+          echo "APK size: $(du -sh $APK | cut -f1)"
+          echo "APK path: $APK"

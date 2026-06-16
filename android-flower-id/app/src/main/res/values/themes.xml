@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.FlowerID" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/garden_green</item>
+        <item name="colorPrimaryVariant">@color/garden_green_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="android:windowBackground">@color/black</item>
+        <item name="android:statusBarColor">#00000000</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <style name="Theme.FlowerID.Settings" parent="Theme.Material3.DayNight">
+        <item name="colorPrimary">@color/garden_green</item>
+        <item name="colorPrimaryVariant">@color/garden_green_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="android:windowBackground">@color/background</item>
+    </style>
+</resources>
