@@ -31,9 +31,7 @@
         android:fillColor="#FFFFFF"
         android:pathData="M77,77 C77,77 73,66 65,65 C57,64 54,58 54,58 C54,58 60,64 61,72 C62,80 77,77 77,77Z" />
     <!-- Center circle -->
-    <circle
+    <path
         android:fillColor="#FFD54F"
-        android:cx="54"
-        android:cy="54"
-        android:r="10" />
+        android:pathData="M44,54 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 z" />
 </vector>
