@@ -191,9 +191,9 @@ class MainActivity : AppCompatActivity() {
 
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
-            .addFormDataPart("organs[]", "auto")
+            .addFormDataPart("organs", "auto")
             .addFormDataPart(
-                "images[]", "plant.jpg",
+                "images", "plant.jpg",
                 stream.toByteArray().toRequestBody("image/jpeg".toMediaType())
             )
             .build()
@@ -227,11 +227,16 @@ class MainActivity : AppCompatActivity() {
                             "Plant not recognized — try a closer photo",
                             Toast.LENGTH_LONG
                         ).show()
-                        else -> Toast.makeText(
-                            this@MainActivity,
-                            "API error ${response.code}",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        else -> {
+                            val detail = try {
+                                JsonParser.parseString(bodyStr).asJsonObject.get("message")?.asString
+                            } catch (e: Exception) { null }
+                            Toast.makeText(
+                                this@MainActivity,
+                                "API error ${response.code}${if (detail != null) ": $detail" else ""}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     }
                 }
             }
