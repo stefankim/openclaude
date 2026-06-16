@@ -6,6 +6,7 @@ on:
       - 'claude/flower-id-android-app-cog6lz'
     paths:
       - 'android-flower-id/**'
+      - '.github/workflows/build-flower-id-apk.yml'
   workflow_dispatch:
 
 permissions:
