@@ -3,7 +3,6 @@ package com.openclaude.weather.ui.components
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.Foggy
 import androidx.compose.material.icons.filled.Grain
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.Thunderstorm
@@ -23,7 +22,7 @@ fun WeatherIcon(name: String, modifier: Modifier = Modifier, tint: Color = Color
         "clear_night" -> Icons.Filled.NightsStay
         "partly_cloudy" -> Icons.Filled.WbCloudy
         "cloudy" -> Icons.Filled.Cloud
-        "foggy" -> Icons.Filled.Foggy
+        "foggy" -> Icons.Filled.Cloud
         "rainy" -> Icons.Filled.Grain
         "snowy" -> Icons.Filled.AcUnit
         "thunderstorm" -> Icons.Filled.Thunderstorm
