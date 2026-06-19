@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Weather &amp; Radar</string>
+    <string name="widget_name">Weather &amp; Radar widget</string>
+    <string name="widget_description">Live animated weather for your selected location.</string>
+</resources>
