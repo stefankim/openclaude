@@ -10,7 +10,8 @@ import androidx.recyclerview.widget.RecyclerView
 
 class FavoritesAdapter(
     private val items: MutableList<Favorite>,
-    private val onRemove: (Favorite) -> Unit
+    private val onRemove: (Favorite) -> Unit,
+    private val onClick: (Favorite) -> Unit
 ) : RecyclerView.Adapter<FavoritesAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -37,11 +38,12 @@ class FavoritesAdapter(
         val bitmap = FavoritesStore.loadImage(holder.itemView.context, item.imageFileName)
         if (bitmap != null) holder.image.setImageBitmap(bitmap)
 
+        val context = holder.itemView.context
         if (item.isWeed) {
-            holder.weedBadge.text = "☠ Weed"
+            holder.weedBadge.text = context.getString(R.string.weed_badge_weed)
             holder.weedBadge.setBackgroundColor(0xFFC62828.toInt())
         } else {
-            holder.weedBadge.text = "✓ Keep"
+            holder.weedBadge.text = context.getString(R.string.weed_badge_keep)
             holder.weedBadge.setBackgroundColor(0xFF2E7D32.toInt())
         }
 
@@ -52,6 +54,11 @@ class FavoritesAdapter(
                 notifyItemRemoved(pos)
                 onRemove(removed)
             }
+        }
+
+        holder.itemView.setOnClickListener {
+            val pos = holder.bindingAdapterPosition
+            if (pos != RecyclerView.NO_POSITION) onClick(items[pos])
         }
     }
 }

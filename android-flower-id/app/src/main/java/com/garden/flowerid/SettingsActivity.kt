@@ -14,7 +14,7 @@ class SettingsActivity : AppCompatActivity() {
 
         supportActionBar?.apply {
             setDisplayHomeAsUpEnabled(true)
-            title = "API Key Setup"
+            title = getString(R.string.api_key_setup_title)
         }
 
         val apiKeyInput = findViewById<EditText>(R.id.apiKeyInput)
@@ -26,11 +26,11 @@ class SettingsActivity : AppCompatActivity() {
         saveButton.setOnClickListener {
             val key = apiKeyInput.text.toString().trim()
             if (key.isBlank()) {
-                Toast.makeText(this, "Please enter your API key", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, R.string.enter_api_key, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             prefs.edit().putString("api_key", key).apply()
-            Toast.makeText(this, "API key saved!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.api_key_saved, Toast.LENGTH_SHORT).show()
             finish()
         }
     }

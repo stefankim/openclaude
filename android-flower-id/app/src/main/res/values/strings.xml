@@ -6,6 +6,32 @@
     <string name="scan_again">Scan Another Plant</string>
     <string name="learn_more">Read more on Wikipedia →</string>
     <string name="loading_description">Loading description…</string>
+    <string name="confidence_format">Confidence: %1$.0f%%</string>
+    <string name="weed_status_weed">WEED — Safe to Remove!</string>
+    <string name="weed_status_safe">Not a weed — Keep it</string>
+    <string name="weed_badge_weed">☠ Weed</string>
+    <string name="weed_badge_keep">✓ Keep</string>
+    <string name="close">Close</string>
+
+    <!-- Content descriptions -->
+    <string name="content_desc_settings">Settings</string>
+    <string name="content_desc_take_photo">Take Photo</string>
+    <string name="content_desc_close">Close</string>
+    <string name="content_desc_plant_photo">Captured plant photo</string>
+    <string name="content_desc_favorite_photo">Favorite plant photo</string>
+
+    <!-- Toasts / errors -->
+    <string name="permission_camera_required">Camera permission is required</string>
+    <string name="camera_error">Camera error: %1$s</string>
+    <string name="set_api_key_first">Set your free PlantNet API key in Settings first</string>
+    <string name="capture_failed">Capture failed</string>
+    <string name="network_error">Network error: %1$s</string>
+    <string name="invalid_api_key">Invalid API key — check Settings</string>
+    <string name="plant_not_recognized">Plant not recognized — try a closer photo</string>
+    <string name="api_error">API error %1$d</string>
+    <string name="could_not_parse_response">Could not parse response</string>
+    <string name="removed_from_favorites_toast">Removed from favorites</string>
+    <string name="added_to_favorites_toast">Added to favorites</string>
 
     <!-- Favorites -->
     <string name="favorites_title">My Favorites</string>
@@ -23,4 +49,7 @@
     <string name="api_key_hint">Paste your PlantNet API key here</string>
     <string name="save_key">Save &amp; Start Identifying</string>
     <string name="free_note">PlantNet is a free, open scientific project. No credit card needed.</string>
+    <string name="api_key_setup_title">API Key Setup</string>
+    <string name="enter_api_key">Please enter your API key</string>
+    <string name="api_key_saved">API key saved!</string>
 </resources>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Garden Weed ID</string>
+    <string name="instruction">Namierte na kvetinu alebo rastlinu a ťuknutím ju identifikujte</string>
+    <string name="identifying">Identifikujem rastlinu…</string>
+    <string name="scan_again">Skenovať ďalšiu rastlinu</string>
+    <string name="learn_more">Viac na Wikipédii →</string>
+    <string name="loading_description">Načítavam popis…</string>
+    <string name="confidence_format">Spoľahlivosť: %1$.0f %%</string>
+    <string name="weed_status_weed">BURINA — Môžete ju odstrániť!</string>
+    <string name="weed_status_safe">Nie je burina — Nechajte ju</string>
+    <string name="weed_badge_weed">☠ Burina</string>
+    <string name="weed_badge_keep">✓ Nechať</string>
+    <string name="close">Zavrieť</string>
+
+    <!-- Content descriptions -->
+    <string name="content_desc_settings">Nastavenia</string>
+    <string name="content_desc_take_photo">Vyfotiť</string>
+    <string name="content_desc_close">Zavrieť</string>
+    <string name="content_desc_plant_photo">Vyfotená rastlina</string>
+    <string name="content_desc_favorite_photo">Fotka obľúbenej rastliny</string>
+
+    <!-- Toasts / errors -->
+    <string name="permission_camera_required">Je potrebné povolenie na použitie kamery</string>
+    <string name="camera_error">Chyba kamery: %1$s</string>
+    <string name="set_api_key_first">Najprv zadajte svoj bezplatný PlantNet API kľúč v Nastaveniach</string>
+    <string name="capture_failed">Fotenie zlyhalo</string>
+    <string name="network_error">Chyba siete: %1$s</string>
+    <string name="invalid_api_key">Neplatný API kľúč — skontrolujte Nastavenia</string>
+    <string name="plant_not_recognized">Rastlina nebola rozpoznaná — skúste bližšiu fotku</string>
+    <string name="api_error">Chyba API %1$d</string>
+    <string name="could_not_parse_response">Odpoveď sa nepodarilo spracovať</string>
+    <string name="removed_from_favorites_toast">Odstránené z obľúbených</string>
+    <string name="added_to_favorites_toast">Pridané do obľúbených</string>
+
+    <!-- Favorites -->
+    <string name="favorites_title">Moje obľúbené</string>
+    <string name="no_favorites">Zatiaľ žiadne obľúbené.\nŤuknutím na hviezdičku pri rastline ju sem uložíte.</string>
+    <string name="add_to_favorites">Pridať do obľúbených</string>
+    <string name="remove_from_favorites">Odstrániť z obľúbených</string>
+    <string name="view_favorites">Zobraziť obľúbené</string>
+
+    <!-- Settings -->
+    <string name="setup_title">Pripojiť sa k PlantNet API</string>
+    <string name="setup_description">Táto aplikácia používa bezplatné PlantNet API na identifikáciu rastlín.\n\n1. Prejdite na: my.plantnet.org\n2. Zaregistrujte si bezplatný účet\n3. Skopírujte svoj API kľúč a vložte ho nižšie.\n\nBezplatná verzia: 500 identifikácií denne.</string>
+    <string name="step1_label">KROK 1 — Získajte svoj bezplatný API kľúč</string>
+    <string name="step1_desc">Navštívte my.plantnet.org → Registrácia → Môj profil → API kľúče</string>
+    <string name="step2_label">KROK 2 — Vložte svoj API kľúč nižšie</string>
+    <string name="api_key_hint">Sem vložte svoj PlantNet API kľúč</string>
+    <string name="save_key">Uložiť a začať identifikovať</string>
+    <string name="free_note">PlantNet je bezplatný, otvorený vedecký projekt. Nie je potrebná platobná karta.</string>
+    <string name="api_key_setup_title">Nastavenie API kľúča</string>
+    <string name="enter_api_key">Zadajte svoj API kľúč</string>
+    <string name="api_key_saved">API kľúč uložený!</string>
+</resources>

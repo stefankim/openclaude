@@ -14,7 +14,7 @@
         android:layout_height="64dp"
         android:scaleType="centerCrop"
         android:background="#EEEEEE"
-        android:contentDescription="Favorite plant photo" />
+        android:contentDescription="@string/content_desc_favorite_photo" />
 
     <LinearLayout
         android:layout_width="0dp"
@@ -58,6 +58,6 @@
         android:layout_height="40dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_delete"
-        android:contentDescription="Remove from favorites" />
+        android:contentDescription="@string/remove_from_favorites" />
 
 </LinearLayout>

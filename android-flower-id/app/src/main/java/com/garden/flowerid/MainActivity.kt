@@ -124,7 +124,7 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERM_REQUEST && allPermissionsGranted()) startCamera()
-        else Toast.makeText(this, "Camera permission is required", Toast.LENGTH_LONG).show()
+        else Toast.makeText(this, R.string.permission_camera_required, Toast.LENGTH_LONG).show()
     }
 
     private fun allPermissionsGranted() = ContextCompat.checkSelfPermission(
@@ -147,7 +147,7 @@ class MainActivity : AppCompatActivity() {
                     this, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageCapture
                 )
             } catch (e: Exception) {
-                Toast.makeText(this, "Camera error: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.camera_error, e.message), Toast.LENGTH_SHORT).show()
             }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -158,11 +158,7 @@ class MainActivity : AppCompatActivity() {
             .getString("api_key", "") ?: ""
 
         if (apiKey.isBlank()) {
-            Toast.makeText(
-                this,
-                "Set your free PlantNet API key in Settings first",
-                Toast.LENGTH_LONG
-            ).show()
+            Toast.makeText(this, R.string.set_api_key_first, Toast.LENGTH_LONG).show()
             startActivity(Intent(this, SettingsActivity::class.java))
             return
         }
@@ -180,7 +176,7 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onError(e: ImageCaptureException) {
                     captureButton.isEnabled = true
-                    Toast.makeText(this@MainActivity, "Capture failed", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, R.string.capture_failed, Toast.LENGTH_SHORT).show()
                 }
             }
         )
@@ -230,7 +226,7 @@ class MainActivity : AppCompatActivity() {
             override fun onFailure(call: okhttp3.Call, e: IOException) = runOnUiThread {
                 showLoading(false)
                 captureButton.isEnabled = true
-                Toast.makeText(this@MainActivity, "Network error: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MainActivity, getString(R.string.network_error, e.message), Toast.LENGTH_LONG).show()
             }
 
             override fun onResponse(call: okhttp3.Call, response: Response) {
@@ -242,23 +238,21 @@ class MainActivity : AppCompatActivity() {
                         response.isSuccessful && bodyStr != null -> parseAndShow(bodyStr)
                         response.code == 401 -> Toast.makeText(
                             this@MainActivity,
-                            "Invalid API key — check Settings",
+                            R.string.invalid_api_key,
                             Toast.LENGTH_LONG
                         ).show()
                         response.code == 404 -> Toast.makeText(
                             this@MainActivity,
-                            "Plant not recognized — try a closer photo",
+                            R.string.plant_not_recognized,
                             Toast.LENGTH_LONG
                         ).show()
                         else -> {
                             val detail = try {
                                 JsonParser.parseString(bodyStr).asJsonObject.get("message")?.asString
                             } catch (e: Exception) { null }
-                            Toast.makeText(
-                                this@MainActivity,
-                                "API error ${response.code}${if (detail != null) ": $detail" else ""}",
-                                Toast.LENGTH_LONG
-                            ).show()
+                            val message = getString(R.string.api_error, response.code) +
+                                (if (detail != null) ": $detail" else "")
+                            Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
                         }
                     }
                 }
@@ -271,7 +265,7 @@ class MainActivity : AppCompatActivity() {
             val root = JsonParser.parseString(json).asJsonObject
             val results = root.getAsJsonArray("results")
             if (results == null || results.size() == 0) {
-                Toast.makeText(this, "Plant not recognized — try a closer photo", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, R.string.plant_not_recognized, Toast.LENGTH_LONG).show()
                 return
             }
             val top = results[0].asJsonObject
@@ -284,7 +278,7 @@ class MainActivity : AppCompatActivity() {
 
             showResult(commonName, scientificName, score, WeedDatabase.identify(scientificName))
         } catch (e: Exception) {
-            Toast.makeText(this, "Could not parse response", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.could_not_parse_response, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -297,7 +291,7 @@ class MainActivity : AppCompatActivity() {
         flowerImage.setImageBitmap(lastCapturedBitmap)
         plantNameText.text = commonName
         scientificNameText.text = scientificName
-        confidenceText.text = "Confidence: ${"%.0f".format(confidence)}%"
+        confidenceText.text = getString(R.string.confidence_format, confidence)
 
         currentCommonName = commonName
         currentScientificName = scientificName
@@ -310,13 +304,13 @@ class MainActivity : AppCompatActivity() {
         if (weedInfo != null) {
             weedStatusBanner.setBackgroundColor(0xFFC62828.toInt())
             weedStatusIcon.text = "☠"
-            weedStatusText.text = "WEED — Safe to Remove!"
+            weedStatusText.text = getString(R.string.weed_status_weed)
             weedReasonText.text = weedInfo.reason
             weedReasonText.visibility = View.VISIBLE
         } else {
             weedStatusBanner.setBackgroundColor(0xFF2E7D32.toInt())
             weedStatusIcon.text = "✓"
-            weedStatusText.text = "Not a weed — Keep it"
+            weedStatusText.text = getString(R.string.weed_status_safe)
             weedReasonText.visibility = View.GONE
         }
 
@@ -386,7 +380,7 @@ class MainActivity : AppCompatActivity() {
         val scientificName = currentScientificName ?: return
         if (FavoritesStore.isFavorite(this, scientificName)) {
             FavoritesStore.remove(this, scientificName)
-            Toast.makeText(this, "Removed from favorites", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.removed_from_favorites_toast, Toast.LENGTH_SHORT).show()
         } else {
             FavoritesStore.add(
                 this,
@@ -399,7 +393,7 @@ class MainActivity : AppCompatActivity() {
                 wikipediaUrl = currentWikipediaUrl,
                 bitmap = lastCapturedBitmap
             )
-            Toast.makeText(this, "Added to favorites", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.added_to_favorites_toast, Toast.LENGTH_SHORT).show()
         }
         updateFavoriteButtonState()
     }

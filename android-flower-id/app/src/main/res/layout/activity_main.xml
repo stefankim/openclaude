@@ -32,7 +32,7 @@
         android:layout_height="48dp"
         android:background="@drawable/btn_icon_bg"
         android:src="@drawable/ic_settings"
-        android:contentDescription="Settings"
+        android:contentDescription="@string/content_desc_settings"
         android:layout_margin="16dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -72,7 +72,7 @@
         android:layout_height="80dp"
         android:background="@drawable/btn_capture"
         android:src="@drawable/ic_camera"
-        android:contentDescription="Take Photo"
+        android:contentDescription="@string/content_desc_take_photo"
         android:layout_marginBottom="40dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -152,7 +152,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:scaleType="centerCrop"
-                    android:contentDescription="Captured plant photo" />
+                    android:contentDescription="@string/content_desc_plant_photo" />
 
                 <ImageButton
                     android:id="@+id/closeResultButton"
@@ -162,7 +162,7 @@
                     android:layout_margin="10dp"
                     android:background="@drawable/btn_icon_bg"
                     android:src="@drawable/ic_close"
-                    android:contentDescription="Close" />
+                    android:contentDescription="@string/content_desc_close" />
 
                 <ImageButton
                     android:id="@+id/favoriteButton"
