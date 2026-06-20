@@ -69,6 +69,7 @@ fun AppScaffold(
     val forecastState by weatherVm.forecast.collectAsState()
     val search by weatherVm.search.collectAsState()
     val radarState by radarVm.state.collectAsState()
+    val radarForecast by radarVm.forecast.collectAsState()
 
     var tab by remember { mutableStateOf(Tab.TODAY) }
     val snackbar = remember { SnackbarHostState() }
@@ -141,8 +142,10 @@ fun AppScaffold(
 
                     Tab.RADAR -> RadarScreen(
                         state = radarState,
+                        forecast = radarForecast,
                         location = selected,
-                        onRetry = { radarVm.load() }
+                        onRetry = { radarVm.load() },
+                        onLoadForecast = { lat, lon -> radarVm.loadForecast(lat, lon) }
                     )
 
                     else -> {

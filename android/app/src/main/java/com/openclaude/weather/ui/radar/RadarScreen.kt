@@ -61,7 +61,18 @@ private class RainViewerTileSource(name: String, private val template: String) :
     }
 }
 
-private enum class RadarMode { LIVE, FORECAST }
+private enum class RadarMode(val label: String) { LIVE("Live"), FORECAST("Forecast"), WINDY("Windy") }
+
+/** Coarser relative label for forecast hours, e.g. "now", "in 5 h", "in 2 days". */
+private fun relativeDayLabel(epochSeconds: Long): String {
+    val deltaH = ((epochSeconds - System.currentTimeMillis() / 1000) / 3600.0)
+    val h = Math.round(deltaH).toInt()
+    return when {
+        h <= 0 -> "now"
+        h < 24 -> "in $h h"
+        else -> "in ${h / 24} day${if (h / 24 == 1) "" else "s"}"
+    }
+}
 
 /** Human label for a radar frame relative to now, e.g. "now", "−40 min", "in 20 min". */
 private fun relativeLabel(epochSeconds: Long): String {
@@ -78,8 +89,10 @@ private fun relativeLabel(epochSeconds: Long): String {
 @Composable
 fun RadarScreen(
     state: RadarUiState,
+    forecast: PrecipForecastState,
     location: SavedLocation?,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onLoadForecast: (Double, Double) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -89,6 +102,21 @@ fun RadarScreen(
     var frameIndex by remember { mutableStateOf(0) }
     var playing by remember { mutableStateOf(true) }
     var mode by remember { mutableStateOf(RadarMode.LIVE) }
+    var forecastHour by remember { mutableStateOf(0) }
+
+    // Load the native forecast grid when entering Forecast mode or changing location.
+    LaunchedEffect(mode, location?.id) {
+        if (mode == RadarMode.FORECAST && location != null) {
+            onLoadForecast(location.latitude, location.longitude)
+        }
+    }
+
+    // Default the forecast slider to the current hour once the grid arrives.
+    LaunchedEffect(forecast.grid) {
+        val times = forecast.grid?.times ?: return@LaunchedEffect
+        val now = System.currentTimeMillis() / 1000
+        forecastHour = times.indexOfFirst { it >= now }.coerceAtLeast(0)
+    }
 
     // Default to the last "past" frame (closest to now) once frames arrive.
     LaunchedEffect(state.frames.size) {
@@ -116,6 +144,7 @@ fun RadarScreen(
         }
     }
     var radarOverlay by remember { mutableStateOf<TilesOverlay?>(null) }
+    val precipOverlay = remember { PrecipForecastOverlay() }
     val locationMarker = remember {
         Marker(mapView).apply {
             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
@@ -139,28 +168,41 @@ fun RadarScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (mode == RadarMode.LIVE) {
+        if (mode == RadarMode.WINDY) {
+            // Multi-day forecast radar for Slovakia (Windy: blends radar + forecast model).
+            WindyRadarView(location = location, modifier = Modifier.fillMaxSize())
+        } else {
             AndroidView(
                 factory = { mapView },
                 modifier = Modifier.fillMaxSize(),
                 update = { mv ->
-                    val frame = state.frames.getOrNull(frameIndex) ?: return@AndroidView
-                    // Swap the radar overlay for the current frame, keeping it beneath the pin.
-                    radarOverlay?.let { mv.overlays.remove(it) }
-                    val source = RainViewerTileSource("rainviewer-${frame.time}", frame.tileUrlTemplate)
-                    val provider = MapTileProviderBasic(mv.context, source)
-                    val overlay = TilesOverlay(provider, mv.context).apply {
-                        loadingBackgroundColor = AndroidColor.TRANSPARENT
-                        loadingLineColor = AndroidColor.TRANSPARENT
+                    when (mode) {
+                        RadarMode.LIVE -> {
+                            // Observed RainViewer frames; remove the forecast overlay if present.
+                            mv.overlays.remove(precipOverlay)
+                            val frame = state.frames.getOrNull(frameIndex) ?: return@AndroidView
+                            radarOverlay?.let { mv.overlays.remove(it) }
+                            val source = RainViewerTileSource("rainviewer-${frame.time}", frame.tileUrlTemplate)
+                            val provider = MapTileProviderBasic(mv.context, source)
+                            val overlay = TilesOverlay(provider, mv.context).apply {
+                                loadingBackgroundColor = AndroidColor.TRANSPARENT
+                                loadingLineColor = AndroidColor.TRANSPARENT
+                            }
+                            mv.overlays.add(0, overlay)
+                            radarOverlay = overlay
+                        }
+                        RadarMode.FORECAST -> {
+                            // Native Open-Meteo precipitation cells; remove the RainViewer layer.
+                            radarOverlay?.let { mv.overlays.remove(it); radarOverlay = null }
+                            precipOverlay.grid = forecast.grid
+                            precipOverlay.hourIndex = forecastHour
+                            if (!mv.overlays.contains(precipOverlay)) mv.overlays.add(0, precipOverlay)
+                        }
+                        else -> Unit
                     }
-                    mv.overlays.add(0, overlay)
-                    radarOverlay = overlay
                     mv.invalidate()
                 }
             )
-        } else {
-            // Multi-day forecast radar for Slovakia (Windy: blends radar + forecast model).
-            WindyRadarView(location = location, modifier = Modifier.fillMaxSize())
         }
 
         // Title chip.
@@ -179,7 +221,11 @@ fun RadarScreen(
                 fontSize = 16.sp
             )
             Text(
-                text = if (mode == RadarMode.LIVE) "Live · last 2 h + nowcast" else "Forecast · next days",
+                text = when (mode) {
+                    RadarMode.LIVE -> "Live · last 2 h + nowcast"
+                    RadarMode.FORECAST -> "Forecast · next 3 days (Open-Meteo)"
+                    RadarMode.WINDY -> "Forecast · Windy"
+                },
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 11.sp
             )
@@ -198,7 +244,7 @@ fun RadarScreen(
             RadarMode.entries.forEach { m ->
                 val selected = m == mode
                 Text(
-                    text = if (m == RadarMode.LIVE) "Live" else "Forecast",
+                    text = m.label,
                     color = if (selected) Color(0xFF0F172A) else Color.White,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -206,7 +252,7 @@ fun RadarScreen(
                         .clip(RoundedCornerShape(16.dp))
                         .background(if (selected) Color.White else Color.Transparent)
                         .clickable { mode = m }
-                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                 )
             }
         }
@@ -227,6 +273,54 @@ fun RadarScreen(
                         color = Color(0xFF9FD0FF),
                         modifier = Modifier.padding(8.dp).clip(RoundedCornerShape(8.dp)).clickable { onRetry() }
                     )
+                }
+            }
+        }
+
+        if (mode == RadarMode.FORECAST) {
+            when {
+                forecast.loading -> CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color.White
+                )
+                forecast.error != null -> Text(
+                    forecast.error,
+                    color = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .clickable { location?.let { onLoadForecast(it.latitude, it.longitude) } }
+                )
+            }
+
+            val grid = forecast.grid
+            if (grid != null && grid.times.isNotEmpty()) {
+                val time = grid.times.getOrNull(forecastHour)
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xCC0F172A))
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        time?.let { Format.localDayTime(it) } ?: "",
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        time?.let { relativeDayLabel(it) } ?: "",
+                        color = Color(0xFF9FD0FF),
+                        fontSize = 12.sp
+                    )
+                    Slider(
+                        value = forecastHour.toFloat(),
+                        onValueChange = { forecastHour = it.toInt().coerceIn(0, grid.times.lastIndex) },
+                        valueRange = 0f..(grid.times.lastIndex.coerceAtLeast(1).toFloat()),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    PrecipLegend()
                 }
             }
         }
@@ -273,6 +367,40 @@ fun RadarScreen(
                         modifier = Modifier.weight(1f)
                     )
                 }
+            }
+        }
+    }
+}
+
+/** Compact precipitation colour-ramp legend for the native forecast radar. */
+@Composable
+private fun PrecipLegend() {
+    val steps = listOf(
+        0.3 to "light",
+        1.5 to "moderate",
+        3.5 to "heavy",
+        7.0 to "v. heavy",
+        12.0 to "extreme"
+    )
+    Row(
+        modifier = Modifier.padding(top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        steps.forEach { (mm, label) ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(Color(PrecipForecastOverlay.colorFor(mm) ?: 0))
+                )
+                Text(
+                    label,
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(start = 3.dp)
+                )
             }
         }
     }

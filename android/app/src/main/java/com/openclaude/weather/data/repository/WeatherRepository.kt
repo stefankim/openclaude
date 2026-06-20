@@ -41,6 +41,58 @@ class WeatherRepository {
         else geocodingApi.search(query.trim()).results ?: emptyList()
     }
 
+    /** One grid cell of the native precipitation forecast (precip in mm/h per hour index). */
+    data class PrecipCell(val lat: Double, val lon: Double, val precip: List<Double>)
+
+    /** A grid of precipitation forecast cells sharing a common [times] axis (UTC seconds). */
+    data class PrecipGrid(
+        val times: List<Long>,
+        val latStep: Double,
+        val lonStep: Double,
+        val cells: List<PrecipCell>
+    ) {
+        val isEmpty: Boolean get() = times.isEmpty() || cells.isEmpty()
+    }
+
+    private val precipCache = mutableMapOf<String, PrecipGrid>()
+
+    /**
+     * Builds a native, fully-licensed precipitation forecast grid (Open-Meteo, CC-BY)
+     * centred on the given point — a free alternative to the Windy embed.
+     */
+    suspend fun precipForecast(centerLat: Double, centerLon: Double): PrecipGrid =
+        withContext(Dispatchers.IO) {
+            val key = "%.2f,%.2f".format(centerLat, centerLon)
+            precipCache[key]?.let { return@withContext it }
+
+            val rows = 12
+            val cols = 14
+            val latStep = 0.28
+            val lonStep = 0.42
+            val lats = ArrayList<String>(rows * cols)
+            val lons = ArrayList<String>(rows * cols)
+            for (r in 0 until rows) {
+                for (c in 0 until cols) {
+                    val lat = centerLat + (r - rows / 2) * latStep
+                    val lon = centerLon + (c - cols / 2) * lonStep
+                    lats.add("%.3f".format(lat))
+                    lons.add("%.3f".format(lon))
+                }
+            }
+            val resp = weatherApi.precipitationGrid(lats.joinToString(","), lons.joinToString(","))
+            val times = resp.firstOrNull { !it.hourly?.time.isNullOrEmpty() }?.hourly?.time ?: emptyList()
+            val cells = resp.map { p ->
+                PrecipCell(
+                    lat = p.latitude,
+                    lon = p.longitude,
+                    precip = p.hourly?.precipitation?.map { it ?: 0.0 } ?: emptyList()
+                )
+            }
+            val grid = PrecipGrid(times, latStep, lonStep, cells)
+            precipCache[key] = grid
+            grid
+        }
+
     data class RadarData(val host: String, val frames: List<RadarFrame>, val nowcastFrom: Int)
 
     suspend fun radarFrames(): RadarData = withContext(Dispatchers.IO) {

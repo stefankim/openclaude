@@ -25,6 +25,20 @@ interface OpenMeteoApi {
             "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max," +
                 "precipitation_sum,precipitation_probability_max,wind_speed_10m_max"
     ): ForecastResponse
+
+    /**
+     * Bulk precipitation forecast for a grid of coordinates (comma-separated). Open-Meteo
+     * returns one JSON object per coordinate. Used to build the native forecast radar.
+     */
+    @GET("v1/forecast")
+    suspend fun precipitationGrid(
+        @Query("latitude") latitudes: String,
+        @Query("longitude") longitudes: String,
+        @Query("hourly") hourly: String = "precipitation",
+        @Query("timeformat") timeFormat: String = "unixtime",
+        @Query("timezone") timezone: String = "GMT",
+        @Query("forecast_days") forecastDays: Int = 3
+    ): List<GridPointResponse>
 }
 
 interface GeocodingApi {

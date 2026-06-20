@@ -17,12 +17,39 @@ data class RadarUiState(
     val error: String? = null
 )
 
+data class PrecipForecastState(
+    val loading: Boolean = false,
+    val grid: WeatherRepository.PrecipGrid? = null,
+    val error: String? = null
+)
+
 class RadarViewModel(private val repository: WeatherRepository) : ViewModel() {
 
     private val _state = MutableStateFlow(RadarUiState())
     val state: StateFlow<RadarUiState> = _state.asStateFlow()
 
+    private val _forecast = MutableStateFlow(PrecipForecastState())
+    val forecast: StateFlow<PrecipForecastState> = _forecast.asStateFlow()
+
+    private var lastForecastKey: String? = null
+
     init { load() }
+
+    /** Loads the native precipitation forecast grid centred on the given point (cached). */
+    fun loadForecast(lat: Double, lon: Double) {
+        val key = "%.2f,%.2f".format(lat, lon)
+        if (key == lastForecastKey && _forecast.value.grid != null) return
+        lastForecastKey = key
+        _forecast.value = PrecipForecastState(loading = true)
+        viewModelScope.launch {
+            runCatching { repository.precipForecast(lat, lon) }
+                .onSuccess { _forecast.value = PrecipForecastState(grid = it) }
+                .onFailure {
+                    lastForecastKey = null
+                    _forecast.value = PrecipForecastState(error = it.message ?: "Forecast unavailable")
+                }
+        }
+    }
 
     fun load() {
         _state.value = _state.value.copy(loading = true, error = null)

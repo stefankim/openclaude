@@ -84,3 +84,16 @@ data class RadarFrame(
     @Json(name = "time") val time: Long,
     @Json(name = "path") val path: String
 )
+
+// ---- Precipitation forecast grid (one element per coordinate) ----
+
+data class GridPointResponse(
+    @Json(name = "latitude") val latitude: Double = 0.0,
+    @Json(name = "longitude") val longitude: Double = 0.0,
+    @Json(name = "hourly") val hourly: GridHourly?
+)
+
+data class GridHourly(
+    @Json(name = "time") val time: List<Long> = emptyList(),
+    @Json(name = "precipitation") val precipitation: List<Double?> = emptyList()
+)

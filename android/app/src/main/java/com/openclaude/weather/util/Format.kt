@@ -34,4 +34,8 @@ object Format {
 
     fun clock(epochMillis: Long): String =
         SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(epochMillis))
+
+    /** Formats a true-UTC epoch (seconds) as "EEE HH:mm" in the device's local timezone. */
+    fun localDayTime(epochSeconds: Long): String =
+        SimpleDateFormat("EEE HH:mm", Locale.getDefault()).format(Date(epochSeconds * 1000))
 }
