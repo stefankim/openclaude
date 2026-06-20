@@ -2,6 +2,7 @@ package com.openclaude.weather.ui.radar
 
 import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,6 +61,8 @@ private class RainViewerTileSource(name: String, private val template: String) :
     }
 }
 
+private enum class RadarMode { LIVE, FORECAST }
+
 /** Human label for a radar frame relative to now, e.g. "now", "−40 min", "in 20 min". */
 private fun relativeLabel(epochSeconds: Long): String {
     val deltaMin = ((epochSeconds - System.currentTimeMillis() / 1000) / 60.0).let {
@@ -85,6 +88,7 @@ fun RadarScreen(
 
     var frameIndex by remember { mutableStateOf(0) }
     var playing by remember { mutableStateOf(true) }
+    var mode by remember { mutableStateOf(RadarMode.LIVE) }
 
     // Default to the last "past" frame (closest to now) once frames arrive.
     LaunchedEffect(state.frames.size) {
@@ -135,24 +139,29 @@ fun RadarScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        AndroidView(
-            factory = { mapView },
-            modifier = Modifier.fillMaxSize(),
-            update = { mv ->
-                val frame = state.frames.getOrNull(frameIndex) ?: return@AndroidView
-                // Swap the radar overlay for the current frame, keeping it beneath the pin.
-                radarOverlay?.let { mv.overlays.remove(it) }
-                val source = RainViewerTileSource("rainviewer-${frame.time}", frame.tileUrlTemplate)
-                val provider = MapTileProviderBasic(mv.context, source)
-                val overlay = TilesOverlay(provider, mv.context).apply {
-                    loadingBackgroundColor = AndroidColor.TRANSPARENT
-                    loadingLineColor = AndroidColor.TRANSPARENT
+        if (mode == RadarMode.LIVE) {
+            AndroidView(
+                factory = { mapView },
+                modifier = Modifier.fillMaxSize(),
+                update = { mv ->
+                    val frame = state.frames.getOrNull(frameIndex) ?: return@AndroidView
+                    // Swap the radar overlay for the current frame, keeping it beneath the pin.
+                    radarOverlay?.let { mv.overlays.remove(it) }
+                    val source = RainViewerTileSource("rainviewer-${frame.time}", frame.tileUrlTemplate)
+                    val provider = MapTileProviderBasic(mv.context, source)
+                    val overlay = TilesOverlay(provider, mv.context).apply {
+                        loadingBackgroundColor = AndroidColor.TRANSPARENT
+                        loadingLineColor = AndroidColor.TRANSPARENT
+                    }
+                    mv.overlays.add(0, overlay)
+                    radarOverlay = overlay
+                    mv.invalidate()
                 }
-                mv.overlays.add(0, overlay)
-                radarOverlay = overlay
-                mv.invalidate()
-            }
-        )
+            )
+        } else {
+            // Multi-day forecast radar for Slovakia (Windy: blends radar + forecast model).
+            WindyRadarView(location = location, modifier = Modifier.fillMaxSize())
+        }
 
         // Title chip.
         Column(
@@ -170,32 +179,60 @@ fun RadarScreen(
                 fontSize = 16.sp
             )
             Text(
-                text = "Last 2 h + nowcast",
+                text = if (mode == RadarMode.LIVE) "Live · last 2 h + nowcast" else "Forecast · next days",
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 11.sp
             )
         }
 
-        when {
-            state.loading -> CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color = Color.White
-            )
-            state.error != null -> Column(
-                modifier = Modifier.align(Alignment.Center),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(state.error, color = Color.White)
+        // Live / Forecast toggle.
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color(0xAA0F172A))
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            RadarMode.entries.forEach { m ->
+                val selected = m == mode
                 Text(
-                    "Tap to retry",
-                    color = Color(0xFF9FD0FF),
-                    modifier = Modifier.padding(8.dp).clip(RoundedCornerShape(8.dp))
+                    text = if (m == RadarMode.LIVE) "Live" else "Forecast",
+                    color = if (selected) Color(0xFF0F172A) else Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(if (selected) Color.White else Color.Transparent)
+                        .clickable { mode = m }
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
                 )
             }
         }
 
-        // Playback controls.
-        if (state.frames.isNotEmpty()) {
+        if (mode == RadarMode.LIVE) {
+            when {
+                state.loading -> CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color.White
+                )
+                state.error != null -> Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(state.error, color = Color.White)
+                    Text(
+                        "Tap to retry",
+                        color = Color(0xFF9FD0FF),
+                        modifier = Modifier.padding(8.dp).clip(RoundedCornerShape(8.dp)).clickable { onRetry() }
+                    )
+                }
+            }
+        }
+
+        // Playback controls (Live mode only — Windy has its own timeline).
+        if (mode == RadarMode.LIVE && state.frames.isNotEmpty()) {
             val frame = state.frames.getOrNull(frameIndex)
             Column(
                 modifier = Modifier
