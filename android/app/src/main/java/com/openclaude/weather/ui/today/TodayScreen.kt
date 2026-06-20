@@ -39,7 +39,7 @@ import com.openclaude.weather.domain.HourPoint
 import com.openclaude.weather.ui.components.DetailItem
 import com.openclaude.weather.ui.components.GlassCard
 import com.openclaude.weather.ui.components.SectionTitle
-import com.openclaude.weather.ui.components.WeatherIcon
+import com.openclaude.weather.ui.components.WeatherGlyph
 import com.openclaude.weather.ui.components.WeatherSceneView
 import com.openclaude.weather.util.Format
 import com.openclaude.weather.util.WeatherCode
@@ -174,7 +174,7 @@ private fun HourCell(hour: HourPoint) {
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(Format.hour(hour.epochSeconds), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
-        WeatherIcon(hour.condition.icon, modifier = Modifier.size(26.dp))
+        WeatherGlyph(hour.condition.scene, hour.isDay, modifier = Modifier.size(32.dp))
         Text(Format.temp(hour.temperatureC), color = Color.White, fontWeight = FontWeight.SemiBold)
         if (hour.precipitationProbabilityPct > 0) {
             Text(

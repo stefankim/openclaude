@@ -33,7 +33,7 @@ import com.openclaude.weather.domain.DayPoint
 import com.openclaude.weather.domain.Forecast
 import com.openclaude.weather.ui.components.GlassCard
 import com.openclaude.weather.ui.components.SectionTitle
-import com.openclaude.weather.ui.components.WeatherIcon
+import com.openclaude.weather.ui.components.WeatherGlyph
 import com.openclaude.weather.util.Format
 
 /** Week view: the next 7 days. */
@@ -84,7 +84,7 @@ private fun DayRow(
                     fontSize = 15.sp,
                     modifier = Modifier.width(64.dp)
                 )
-                WeatherIcon(day.condition.icon, modifier = Modifier.size(28.dp))
+                WeatherGlyph(day.condition.scene, isDay = true, modifier = Modifier.size(34.dp))
                 Spacer(Modifier.width(8.dp))
                 if (day.precipitationProbabilityPct > 0) {
                     Icon(

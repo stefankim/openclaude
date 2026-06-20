@@ -40,13 +40,13 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.openclaude.weather.data.local.SavedLocation
 import com.openclaude.weather.util.Format
 import kotlinx.coroutines.delay
-import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.MapTileProviderBasic
 import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.util.MapTileIndex
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.TilesOverlay
 
 /** RainViewer tile source: formats a "{z}/{x}/{y}" template into the precipitation tile URL. */
@@ -60,6 +60,18 @@ private class RainViewerTileSource(name: String, private val template: String) :
     }
 }
 
+/** Human label for a radar frame relative to now, e.g. "now", "−40 min", "in 20 min". */
+private fun relativeLabel(epochSeconds: Long): String {
+    val deltaMin = ((epochSeconds - System.currentTimeMillis() / 1000) / 60.0).let {
+        if (it < 0) Math.ceil(it).toInt() else Math.floor(it).toInt()
+    }
+    return when {
+        deltaMin in -2..2 -> "now"
+        deltaMin < 0 -> "−${-deltaMin} min"
+        else -> "in $deltaMin min"
+    }
+}
+
 @Composable
 fun RadarScreen(
     state: RadarUiState,
@@ -68,14 +80,8 @@ fun RadarScreen(
 ) {
     val context = LocalContext.current
 
-    // osmdroid needs a user-agent + config before any MapView is created.
-    LaunchedEffect(Unit) {
-        Configuration.getInstance().load(
-            context,
-            context.getSharedPreferences("osmdroid", android.content.Context.MODE_PRIVATE)
-        )
-        Configuration.getInstance().userAgentValue = context.packageName
-    }
+    // osmdroid User-Agent is configured once in WeatherApp.onCreate(), before any MapView
+    // is built, so the OpenStreetMap base tiles load correctly here.
 
     var frameIndex by remember { mutableStateOf(0) }
     var playing by remember { mutableStateOf(true) }
@@ -100,19 +106,32 @@ fun RadarScreen(
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
-            controller.setZoom(7.0)
+            controller.setZoom(7.5)
             isHorizontalMapRepetitionEnabled = false
+            isTilesScaledToDpi = true
         }
     }
     var radarOverlay by remember { mutableStateOf<TilesOverlay?>(null) }
+    val locationMarker = remember {
+        Marker(mapView).apply {
+            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+        }
+    }
 
     DisposableEffect(Unit) {
         onDispose { mapView.onDetach() }
     }
 
-    // Recenter when the chosen location changes.
+    // Recenter and drop a pin when the chosen location changes.
     LaunchedEffect(location?.id) {
-        location?.let { mapView.controller.setCenter(GeoPoint(it.latitude, it.longitude)) }
+        location?.let {
+            val point = GeoPoint(it.latitude, it.longitude)
+            mapView.controller.setCenter(point)
+            locationMarker.position = point
+            locationMarker.title = it.displayName
+            if (!mapView.overlays.contains(locationMarker)) mapView.overlays.add(locationMarker)
+            mapView.invalidate()
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -121,7 +140,7 @@ fun RadarScreen(
             modifier = Modifier.fillMaxSize(),
             update = { mv ->
                 val frame = state.frames.getOrNull(frameIndex) ?: return@AndroidView
-                // Swap the radar overlay for the current frame.
+                // Swap the radar overlay for the current frame, keeping it beneath the pin.
                 radarOverlay?.let { mv.overlays.remove(it) }
                 val source = RainViewerTileSource("rainviewer-${frame.time}", frame.tileUrlTemplate)
                 val provider = MapTileProviderBasic(mv.context, source)
@@ -129,25 +148,33 @@ fun RadarScreen(
                     loadingBackgroundColor = AndroidColor.TRANSPARENT
                     loadingLineColor = AndroidColor.TRANSPARENT
                 }
-                mv.overlays.add(overlay)
+                mv.overlays.add(0, overlay)
                 radarOverlay = overlay
                 mv.invalidate()
             }
         )
 
         // Title chip.
-        Text(
-            text = "Storm & rain radar",
-            color = Color.White,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
+        Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(16.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(Color(0xAA0F172A))
                 .padding(horizontal = 12.dp, vertical = 6.dp)
-        )
+        ) {
+            Text(
+                text = "Storm & rain radar",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+            Text(
+                text = "Last 2 h + nowcast",
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 11.sp
+            )
+        }
 
         when {
             state.loading -> CircularProgressIndicator(
@@ -194,7 +221,7 @@ fun RadarScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            if (frame?.isForecast == true) "Forecast" else "Observed",
+                            frame?.let { relativeLabel(it.time) } ?: "",
                             color = if (frame?.isForecast == true) Color(0xFFFBBF24) else Color(0xFF9FD0FF),
                             fontSize = 12.sp
                         )
