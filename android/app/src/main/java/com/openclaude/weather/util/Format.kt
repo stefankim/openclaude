@@ -14,13 +14,20 @@ object Format {
             timeZone = TimeZone.getTimeZone("UTC")
         }
 
-    fun hour(epochSeconds: Long): String = fmt("HH:mm").format(Date(epochSeconds * 1000))
+    // Open-Meteo unixtime values are true UTC instants; add the location's utc offset and
+    // render as UTC to display the correct local time/weekday for that place.
 
-    fun weekday(epochSeconds: Long): String = fmt("EEE").format(Date(epochSeconds * 1000))
+    fun hour(epochSeconds: Long, offsetSeconds: Long = 0): String =
+        fmt("HH:mm").format(Date((epochSeconds + offsetSeconds) * 1000))
 
-    fun fullDay(epochSeconds: Long): String = fmt("EEEE, d MMM").format(Date(epochSeconds * 1000))
+    fun weekday(epochSeconds: Long, offsetSeconds: Long = 0): String =
+        fmt("EEE").format(Date((epochSeconds + offsetSeconds) * 1000))
 
-    fun dayMonth(epochSeconds: Long): String = fmt("d MMM").format(Date(epochSeconds * 1000))
+    fun fullDay(epochSeconds: Long, offsetSeconds: Long = 0): String =
+        fmt("EEEE, d MMM").format(Date((epochSeconds + offsetSeconds) * 1000))
+
+    fun dayMonth(epochSeconds: Long, offsetSeconds: Long = 0): String =
+        fmt("d MMM").format(Date((epochSeconds + offsetSeconds) * 1000))
 
     fun temp(c: Double): String = "${Math.round(c)}°"
 

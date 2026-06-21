@@ -60,7 +60,14 @@ private fun DailyList(forecast: Forecast, days: Int, title: String, extended: Bo
     ) {
         item { SectionTitle(title) }
         items(list) { day ->
-            DayRow(day, globalMin, globalMax, extended, isToday = day == list.first())
+            DayRow(
+                day = day,
+                globalMin = globalMin,
+                globalMax = globalMax,
+                tzOffset = forecast.utcOffsetSeconds,
+                extended = extended,
+                isToday = day == list.first()
+            )
         }
         item { Spacer(Modifier.height(16.dp)) }
     }
@@ -71,6 +78,7 @@ private fun DayRow(
     day: DayPoint,
     globalMin: Double,
     globalMax: Double,
+    tzOffset: Long,
     extended: Boolean,
     isToday: Boolean
 ) {
@@ -78,7 +86,7 @@ private fun DayRow(
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    if (isToday) "Today" else Format.weekday(day.epochSeconds),
+                    if (isToday) "Today" else Format.weekday(day.epochSeconds, tzOffset),
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 15.sp,
@@ -121,7 +129,7 @@ private fun DayRow(
                         color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp
                     )
                     day.sunriseEpoch?.let {
-                        Text("☀ ${Format.hour(it)}", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                        Text("☀ ${Format.hour(it, tzOffset)}", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
                     }
                 }
             }

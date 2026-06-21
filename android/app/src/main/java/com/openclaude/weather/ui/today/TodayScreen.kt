@@ -47,6 +47,7 @@ import com.openclaude.weather.util.WeatherCode
 @Composable
 fun TodayScreen(location: SavedLocation, forecast: Forecast) {
     val current = forecast.current
+    val tzOffset = forecast.utcOffsetSeconds
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -110,7 +111,7 @@ fun TodayScreen(location: SavedLocation, forecast: Forecast) {
             val nowSec = System.currentTimeMillis() / 1000
             val upcoming = forecast.hourly.filter { it.epochSeconds >= nowSec - 3600 }.take(24)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(upcoming) { hour -> HourCell(hour) }
+                items(upcoming) { hour -> HourCell(hour, tzOffset) }
             }
         }
 
@@ -146,13 +147,13 @@ fun TodayScreen(location: SavedLocation, forecast: Forecast) {
                     DetailItem(
                         Icons.Filled.WbTwilight,
                         "Sunrise",
-                        current.sunriseEpoch?.let { Format.hour(it) } ?: "—",
+                        current.sunriseEpoch?.let { Format.hour(it, tzOffset) } ?: "—",
                         Modifier.weight(1f)
                     )
                     DetailItem(
                         Icons.Filled.WbTwilight,
                         "Sunset",
-                        current.sunsetEpoch?.let { Format.hour(it) } ?: "—",
+                        current.sunsetEpoch?.let { Format.hour(it, tzOffset) } ?: "—",
                         Modifier.weight(1f)
                     )
                 }
@@ -164,7 +165,7 @@ fun TodayScreen(location: SavedLocation, forecast: Forecast) {
 }
 
 @Composable
-private fun HourCell(hour: HourPoint) {
+private fun HourCell(hour: HourPoint, tzOffset: Long) {
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
@@ -173,7 +174,7 @@ private fun HourCell(hour: HourPoint) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Text(Format.hour(hour.epochSeconds), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
+        Text(Format.hour(hour.epochSeconds, tzOffset), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
         WeatherGlyph(hour.condition.scene, hour.isDay, modifier = Modifier.size(32.dp))
         Text(Format.temp(hour.temperatureC), color = Color.White, fontWeight = FontWeight.SemiBold)
         if (hour.precipitationProbabilityPct > 0) {

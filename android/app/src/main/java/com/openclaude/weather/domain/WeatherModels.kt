@@ -57,5 +57,7 @@ data class Forecast(
     val hourly: List<HourPoint>,
     val daily: List<DayPoint>,
     val timezone: String,
+    /** Seconds to add to the UTC epochs to obtain the location's local time. */
+    val utcOffsetSeconds: Long,
     val fetchedAtMillis: Long
 )

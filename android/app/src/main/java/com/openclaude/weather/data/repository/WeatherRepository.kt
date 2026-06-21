@@ -169,6 +169,7 @@ class WeatherRepository {
             hourly = hourly,
             daily = days,
             timezone = dto.timezone ?: "auto",
+            utcOffsetSeconds = dto.utcOffsetSeconds ?: 0L,
             fetchedAtMillis = System.currentTimeMillis()
         )
     }
