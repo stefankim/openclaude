@@ -26,7 +26,9 @@ class Converters {
         EventLogEntity::class,
     ],
     version = 1,
-    exportSchema = true,
+    // Schema export requires the Room Gradle plugin + a schema dir; disabled until
+    // the first stable release wires pinned migrations.
+    exportSchema = false,
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {

@@ -114,7 +114,7 @@ class RootShellManager {
     }.flowOn(Dispatchers.IO)
 
     companion object {
-        private const val SHELL_INIT_TIMEOUT_SECONDS = 20
+        private const val SHELL_INIT_TIMEOUT_SECONDS = 20L
         const val DEFAULT_TIMEOUT_MS = 60_000L
     }
 }

@@ -50,6 +50,6 @@ App-level audit trail surfaced on the Logs screen (separate from container logs)
 
 ## Migrations
 
-Schemas are exported (`room.schemaLocation`) for review. v1 ships with
-`fallbackToDestructiveMigration` during pre-release; pinned migrations are added
-before the first stable tag.
+v1 ships with `fallbackToDestructiveMigration` during pre-release. Schema export
+(`exportSchema`) and pinned migrations are wired via the Room Gradle plugin before
+the first stable tag.
