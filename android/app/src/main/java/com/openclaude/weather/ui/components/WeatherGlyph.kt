@@ -3,6 +3,7 @@ package com.openclaude.weather.ui.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -78,15 +79,23 @@ private fun DrawScope.moon(center: Offset = Offset(size.width * 0.52f, size.heig
 }
 
 private fun DrawScope.cloud(center: Offset, u: Float, color: Color) {
-    drawCircle(color, u * 0.55f, Offset(center.x - u * 0.75f, center.y + u * 0.1f))
-    drawCircle(color, u * 0.78f, Offset(center.x - u * 0.18f, center.y - u * 0.28f))
-    drawCircle(color, u * 0.62f, Offset(center.x + u * 0.55f, center.y - u * 0.05f))
-    drawCircle(color, u * 0.5f, Offset(center.x + u * 0.95f, center.y + u * 0.12f))
-    drawRect(
+    val baseline = center.y + u * 0.5f
+    val left = center.x - u * 1.15f
+    val right = center.x + u * 1.15f
+    // Rounded slab base for a soft, flat bottom.
+    drawRoundRect(
         color = color,
-        topLeft = Offset(center.x - u * 1.1f, center.y + u * 0.08f),
-        size = Size(u * 2.1f, u * 0.55f)
+        topLeft = Offset(left, center.y - u * 0.05f),
+        size = Size(right - left, baseline - (center.y - u * 0.05f)),
+        cornerRadius = CornerRadius(u * 0.3f, u * 0.3f)
     )
+    // Puffs kept high so their bottoms stay within the body.
+    drawCircle(color, u * 0.5f, Offset(center.x - u * 0.7f, center.y - u * 0.05f))
+    drawCircle(color, u * 0.78f, Offset(center.x - u * 0.12f, center.y - u * 0.38f))
+    drawCircle(color, u * 0.6f, Offset(center.x + u * 0.55f, center.y - u * 0.2f))
+    drawCircle(color, u * 0.46f, Offset(center.x + u * 0.95f, center.y - u * 0.02f))
+    // Soft highlight.
+    drawCircle(Color.White.copy(alpha = 0.18f), u * 0.4f, Offset(center.x - u * 0.05f, center.y - u * 0.45f))
 }
 
 private fun DrawScope.rainDrops() {

@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -160,14 +161,42 @@ private fun DrawScope.drawCloud(drift: Float, center: Offset, scale: Float, colo
     val dx = (drift % 1f - 0.5f) * size.width * 0.12f
     val c = Offset(center.x + dx, center.y)
     val u = size.minDimension * 0.09f * scale
-    drawCircle(color, u * 1.0f, Offset(c.x - u * 1.4f, c.y))
-    drawCircle(color, u * 1.4f, Offset(c.x - u * 0.4f, c.y - u * 0.4f))
-    drawCircle(color, u * 1.2f, Offset(c.x + u * 0.8f, c.y - u * 0.1f))
-    drawCircle(color, u * 1.0f, Offset(c.x + u * 1.7f, c.y))
-    drawRect(
+    val baseline = c.y + u * 1.0f // flat bottom of the cloud
+
+    // Body: a rounded slab gives a soft, flat base (no poking bumps, no sharp corners).
+    val left = c.x - u * 2.1f
+    val right = c.x + u * 2.1f
+    drawRoundRect(
         color = color,
-        topLeft = Offset(c.x - u * 1.9f, c.y),
-        size = Size(u * 3.8f, u * 1.1f)
+        topLeft = Offset(left, c.y + u * 0.1f),
+        size = Size(right - left, baseline - (c.y + u * 0.1f)),
+        cornerRadius = CornerRadius(u * 0.55f, u * 0.55f)
+    )
+
+    // Puffs along the top — centres kept high enough that their bottoms stay within the
+    // body, so the union reads as one smooth cloud rather than separate discs.
+    val puffs = listOf(
+        Triple(-1.45f, 0.05f, 0.78f),
+        Triple(-0.60f, -0.45f, 1.05f),
+        Triple(0.30f, -0.62f, 1.20f),
+        Triple(1.15f, -0.30f, 0.95f),
+        Triple(1.80f, 0.05f, 0.72f)
+    )
+    puffs.forEach { (fx, fy, fr) ->
+        drawCircle(color, u * fr, Offset(c.x + u * fx, c.y + u * fy))
+    }
+
+    // Soft top highlight + bottom shading for depth.
+    drawCircle(
+        color = Color.White.copy(alpha = 0.18f),
+        radius = u * 0.85f,
+        center = Offset(c.x - u * 0.1f, c.y - u * 0.75f)
+    )
+    drawRoundRect(
+        color = Color.Black.copy(alpha = 0.06f),
+        topLeft = Offset(left, baseline - u * 0.45f),
+        size = Size(right - left, u * 0.45f),
+        cornerRadius = CornerRadius(u * 0.4f, u * 0.4f)
     )
 }
 
