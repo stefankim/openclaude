@@ -1,5 +1,6 @@
 package com.openclaude.weather.ui.today
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.Compress
+import androidx.compose.material.icons.filled.Grain
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.WbSunny
@@ -30,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,111 +51,136 @@ import com.openclaude.weather.util.WeatherCode
 fun TodayScreen(location: SavedLocation, forecast: Forecast) {
     val current = forecast.current
     val tzOffset = forecast.utcOffsetSeconds
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
     ) {
-        // Hero: animated scene with the headline numbers overlaid.
-        Box(modifier = Modifier.fillMaxWidth().height(320.dp)) {
-            WeatherSceneView(
-                scene = current.condition.scene,
-                isDay = current.isDay,
-                modifier = Modifier.fillMaxSize()
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomStart)
-                    .padding(bottom = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+        Spacer(Modifier.height(8.dp))
+
+        // ---- Hero card: temperature on the left, contained animation on the right. ----
+        GlassCard(modifier = Modifier.fillMaxWidth()) {
+            Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Filled.LocationOn,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
+                        Icons.Filled.LocationOn, contentDescription = null,
+                        tint = Color.White, modifier = Modifier.size(16.dp)
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
                         location.displayName,
                         color = Color.White,
-                        fontSize = 18.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Medium
                     )
+                    Spacer(Modifier.weight(1f))
+                    Text("now", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
                 }
-                Text(
-                    Format.tempPrecise(current.temperatureC),
-                    color = Color.White,
-                    fontSize = 72.sp,
-                    fontWeight = FontWeight.Bold
+
+                Spacer(Modifier.height(8.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "${Math.round(current.temperatureC)}°",
+                            color = Color.White,
+                            fontSize = 68.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            current.condition.label,
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            "Feels like ${Math.round(current.apparentTemperatureC)}°",
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 13.sp
+                        )
+                    }
+                    WeatherSceneView(
+                        scene = current.condition.scene,
+                        isDay = current.isDay,
+                        modifier = Modifier.size(132.dp)
+                    )
+                }
+
+                Spacer(Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(Color.White.copy(alpha = 0.18f))
                 )
-                Text(
-                    current.condition.label,
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    "Feels like ${Format.tempPrecise(current.apparentTemperatureC)}",
-                    color = Color.White.copy(alpha = 0.85f),
-                    fontSize = 14.sp
-                )
+                Spacer(Modifier.height(8.dp))
+
+                // Quick stats
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    QuickStat(
+                        Icons.Filled.Air, "Wind",
+                        "${Format.wind(current.windSpeedKmh)} ${WeatherCode.windDirectionLabel(current.windDirectionDeg)}"
+                    )
+                    QuickStat(Icons.Filled.WaterDrop, "Humidity", Format.percent(current.humidityPct))
+                    QuickStat(Icons.Filled.WbSunny, "UV", "${Math.round(current.uvIndex)}")
+                }
             }
         }
 
         Spacer(Modifier.height(16.dp))
 
-        // Hourly forecast (next 24 hours from now).
-        SectionTitle("Hourly forecast")
+        // ---- "Today" divider with sunrise/sunset, like the reference. ----
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Today", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
+            SunTime(current.sunriseEpoch, tzOffset, rising = true)
+            Spacer(Modifier.width(14.dp))
+            SunTime(current.sunsetEpoch, tzOffset, rising = false)
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Hourly forecast (next 24 hours).
         GlassCard(modifier = Modifier.fillMaxWidth()) {
             val nowSec = System.currentTimeMillis() / 1000
             val upcoming = forecast.hourly.filter { it.epochSeconds >= nowSec - 3600 }.take(24)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 items(upcoming) { hour -> HourCell(hour, tzOffset) }
             }
         }
 
         Spacer(Modifier.height(16.dp))
 
-        // Details grid.
+        // ---- Details ----
         SectionTitle("Details")
         GlassCard(modifier = Modifier.fillMaxWidth()) {
             Column {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    DetailItem(
-                        Icons.Filled.Air,
-                        "Wind",
-                        "${Format.wind(current.windSpeedKmh)} ${WeatherCode.windDirectionLabel(current.windDirectionDeg)}",
-                        Modifier.weight(1f)
-                    )
-                    DetailItem(
-                        Icons.Filled.WaterDrop, "Humidity", Format.percent(current.humidityPct),
-                        Modifier.weight(1f)
-                    )
-                }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     DetailItem(
                         Icons.Filled.Compress, "Pressure", "${Math.round(current.pressureHpa)} hPa",
                         Modifier.weight(1f)
                     )
                     DetailItem(
-                        Icons.Filled.WbSunny, "UV index", "${Math.round(current.uvIndex)}",
+                        Icons.Filled.Grain, "Precipitation", Format.mm(current.precipitationMm),
                         Modifier.weight(1f)
                     )
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     DetailItem(
-                        Icons.Filled.WbTwilight,
-                        "Sunrise",
+                        Icons.Filled.WbTwilight, "Sunrise",
                         current.sunriseEpoch?.let { Format.hour(it, tzOffset) } ?: "—",
                         Modifier.weight(1f)
                     )
                     DetailItem(
-                        Icons.Filled.WbTwilight,
-                        "Sunset",
+                        Icons.Filled.WbTwilight, "Sunset",
                         current.sunsetEpoch?.let { Format.hour(it, tzOffset) } ?: "—",
                         Modifier.weight(1f)
                     )
@@ -165,24 +193,50 @@ fun TodayScreen(location: SavedLocation, forecast: Forecast) {
 }
 
 @Composable
+private fun QuickStat(icon: ImageVector, label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(icon, contentDescription = label, tint = Color.White.copy(alpha = 0.9f), modifier = Modifier.size(20.dp))
+        Spacer(Modifier.height(4.dp))
+        Text(value, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        Text(label, color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
+    }
+}
+
+@Composable
+private fun SunTime(epoch: Long?, tzOffset: Long, rising: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            Icons.Filled.WbTwilight,
+            contentDescription = if (rising) "Sunrise" else "Sunset",
+            tint = Color(0xFFFFD54A),
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(Modifier.width(3.dp))
+        Text(
+            "${if (rising) "↑" else "↓"} ${epoch?.let { Format.hour(it, tzOffset) } ?: "—"}",
+            color = Color.White.copy(alpha = 0.85f),
+            fontSize = 12.sp
+        )
+    }
+}
+
+@Composable
 private fun HourCell(hour: HourPoint, tzOffset: Long) {
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
-            .width(64.dp)
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+            .width(58.dp)
+            .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(Format.hour(hour.epochSeconds, tzOffset), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
         WeatherGlyph(hour.condition.scene, hour.isDay, modifier = Modifier.size(32.dp))
         Text(Format.temp(hour.temperatureC), color = Color.White, fontWeight = FontWeight.SemiBold)
-        if (hour.precipitationProbabilityPct > 0) {
-            Text(
-                "${hour.precipitationProbabilityPct}%",
-                color = Color(0xFF9FD0FF),
-                fontSize = 11.sp
-            )
-        }
+        Text(
+            if (hour.precipitationProbabilityPct > 0) "${hour.precipitationProbabilityPct}%" else " ",
+            color = Color(0xFF9FD0FF),
+            fontSize = 11.sp
+        )
     }
 }

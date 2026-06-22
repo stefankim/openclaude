@@ -47,6 +47,8 @@ class WeatherRepository {
     /** A grid of precipitation forecast cells sharing a common [times] axis (UTC seconds). */
     data class PrecipGrid(
         val times: List<Long>,
+        val rows: Int,
+        val cols: Int,
         val latStep: Double,
         val lonStep: Double,
         val cells: List<PrecipCell>
@@ -65,10 +67,10 @@ class WeatherRepository {
             val key = "%.2f,%.2f".format(centerLat, centerLon)
             precipCache[key]?.let { return@withContext it }
 
-            val rows = 12
-            val cols = 14
-            val latStep = 0.28
-            val lonStep = 0.42
+            val rows = 16
+            val cols = 18
+            val latStep = 0.22
+            val lonStep = 0.34
             val lats = ArrayList<String>(rows * cols)
             val lons = ArrayList<String>(rows * cols)
             for (r in 0 until rows) {
@@ -88,7 +90,7 @@ class WeatherRepository {
                     precip = p.hourly?.precipitation?.map { it ?: 0.0 } ?: emptyList()
                 )
             }
-            val grid = PrecipGrid(times, latStep, lonStep, cells)
+            val grid = PrecipGrid(times, rows, cols, latStep, lonStep, cells)
             precipCache[key] = grid
             grid
         }

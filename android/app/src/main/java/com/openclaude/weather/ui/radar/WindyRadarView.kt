@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.openclaude.weather.data.local.SavedLocation
@@ -19,6 +20,8 @@ import com.openclaude.weather.data.local.SavedLocation
 fun WindyRadarView(location: SavedLocation?, modifier: Modifier = Modifier) {
     val lat = location?.latitude ?: 48.7
     val lon = location?.longitude ?: 19.7 // roughly the centre of Slovakia
+    // Recompute the URL only when the location changes — never on unrelated recompositions.
+    val url = remember(location?.id) { buildWindyUrl(lat, lon) }
 
     AndroidView(
         modifier = modifier,
@@ -27,12 +30,21 @@ fun WindyRadarView(location: SavedLocation?, modifier: Modifier = Modifier) {
                 webViewClient = WebViewClient()
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
-                settings.loadWithOverviewMode = true
-                settings.useWideViewPort = true
-                loadUrl(buildWindyUrl(lat, lon))
+                settings.databaseEnabled = true
+                // Windy renders its map with WebGL; keep the WebView hardware-accelerated.
+                setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+                tag = url
+                loadUrl(url)
             }
         },
-        update = { it.loadUrl(buildWindyUrl(lat, lon)) }
+        update = { web ->
+            // Only (re)load when the target URL actually changes; reloading on every
+            // recomposition would restart Windy before its map can render.
+            if (web.tag != url) {
+                web.tag = url
+                web.loadUrl(url)
+            }
+        }
     )
 }
 

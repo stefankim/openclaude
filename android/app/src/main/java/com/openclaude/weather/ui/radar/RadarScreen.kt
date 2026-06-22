@@ -125,9 +125,9 @@ fun RadarScreen(
         }
     }
 
-    // Animation loop.
-    LaunchedEffect(playing, state.frames.size) {
-        if (state.frames.isEmpty()) return@LaunchedEffect
+    // Animation loop (Live mode only).
+    LaunchedEffect(playing, mode, state.frames.size) {
+        if (mode != RadarMode.LIVE || state.frames.isEmpty()) return@LaunchedEffect
         while (playing) {
             delay(700)
             frameIndex = (frameIndex + 1) % state.frames.size
@@ -393,7 +393,7 @@ private fun PrecipLegend() {
                     modifier = Modifier
                         .size(12.dp)
                         .clip(RoundedCornerShape(3.dp))
-                        .background(Color(PrecipForecastOverlay.colorFor(mm) ?: 0))
+                        .background(Color(PrecipForecastOverlay.legendColor(mm)))
                 )
                 Text(
                     label,
