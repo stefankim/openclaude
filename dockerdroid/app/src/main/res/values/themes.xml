@@ -1,0 +1,4 @@
+<resources>
+    <!-- Base theme; colors are driven by Material 3 dynamic color in Compose. -->
+    <style name="Theme.DockerDroid" parent="android:Theme.Material.NoActionBar" />
+</resources>

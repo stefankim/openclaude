@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">DockerDroid</string>
+    <string name="service_channel_name">Docker Engine</string>
+    <string name="service_channel_description">Status of the Docker daemon running on this device.</string>
+    <string name="notif_running">Docker Engine is running</string>
+    <string name="notif_stopped">Docker Engine is stopped</string>
+    <string name="notif_starting">Starting Docker Engine…</string>
+    <string name="action_stop">Stop</string>
+</resources>
