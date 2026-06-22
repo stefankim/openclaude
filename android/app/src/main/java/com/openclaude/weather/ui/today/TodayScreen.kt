@@ -43,7 +43,6 @@ import com.openclaude.weather.ui.components.DetailItem
 import com.openclaude.weather.ui.components.GlassCard
 import com.openclaude.weather.ui.components.SectionTitle
 import com.openclaude.weather.ui.components.WeatherGlyph
-import com.openclaude.weather.ui.components.WeatherSceneView
 import com.openclaude.weather.util.Format
 import com.openclaude.weather.util.WeatherCode
 
@@ -101,10 +100,10 @@ fun TodayScreen(location: SavedLocation, forecast: Forecast) {
                             fontSize = 13.sp
                         )
                     }
-                    WeatherSceneView(
+                    WeatherGlyph(
                         scene = current.condition.scene,
                         isDay = current.isDay,
-                        modifier = Modifier.size(132.dp)
+                        modifier = Modifier.size(96.dp)
                     )
                 }
 
