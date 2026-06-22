@@ -84,7 +84,9 @@ class CompatibilityChecker(private val shell: RootShellManager) {
     }
 
     private suspend fun checkOverlayfs(): CompatibilityCheck {
-        val supported = shell.exec("grep -qw overlay /proc/filesystems && echo yes").out.contains("yes")
+        // Read the kernel's registered filesystems directly; overlayfs is listed here
+        // when CONFIG_OVERLAY_FS is built in or loaded.
+        val supported = shell.exec("cat /proc/filesystems").out.contains("overlay")
         return if (supported) {
             pass("overlayfs", "Storage driver", "overlayfs available")
         } else {
