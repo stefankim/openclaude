@@ -34,7 +34,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -42,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import com.openclaude.weather.domain.WeatherScene
 import com.openclaude.weather.ui.ForecastState
 import com.openclaude.weather.ui.WeatherViewModel
-import com.openclaude.weather.ui.components.WeatherSceneView
 import com.openclaude.weather.ui.radar.RadarViewModel
 import com.openclaude.weather.ui.daily.ExtendedScreen
 import com.openclaude.weather.ui.daily.WeekScreen
@@ -84,24 +82,6 @@ fun AppScaffold(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(sceneGradient(scene, isDay))) {
-        // Live animated weather sky behind the Today screen.
-        if (tab == Tab.TODAY) {
-            WeatherSceneView(
-                scene = scene,
-                isDay = isDay,
-                modifier = Modifier.fillMaxSize()
-            )
-            // Subtle scrim so foreground text/cards stay readable over the animation.
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color(0x22000000), Color(0x11000000), Color(0x40000000))
-                        )
-                    )
-            )
-        }
         Scaffold(
             containerColor = Color.Transparent,
             snackbarHost = { SnackbarHost(snackbar) },

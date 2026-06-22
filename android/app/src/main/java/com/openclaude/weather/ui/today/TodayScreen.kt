@@ -31,8 +31,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,8 +47,14 @@ import com.openclaude.weather.ui.components.DetailItem
 import com.openclaude.weather.ui.components.GlassCard
 import com.openclaude.weather.ui.components.SectionTitle
 import com.openclaude.weather.ui.components.WeatherGlyph
+import com.openclaude.weather.ui.components.WeatherSceneView
 import com.openclaude.weather.util.Format
 import com.openclaude.weather.util.WeatherCode
+
+/** Soft drop shadow so white text reads cleanly over the animated sky. */
+private val shadowed = TextStyle(
+    shadow = Shadow(color = Color(0xB3000000), offset = Offset(0f, 2f), blurRadius = 6f)
+)
 
 @Composable
 fun TodayScreen(location: SavedLocation, forecast: Forecast) {
@@ -59,9 +69,29 @@ fun TodayScreen(location: SavedLocation, forecast: Forecast) {
     ) {
         Spacer(Modifier.height(8.dp))
 
-        // ---- Hero card: temperature on the left, contained animation on the right. ----
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
-            Column {
+        // ---- Hero: animated weather sky with a dark scrim so the text stays readable. ----
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(280.dp)
+                .clip(RoundedCornerShape(24.dp))
+        ) {
+            WeatherSceneView(
+                scene = current.condition.scene,
+                isDay = current.isDay,
+                modifier = Modifier.matchParentSize()
+            )
+            // Scrim: darker toward the bottom where the temperature/labels sit.
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color(0x22000000), Color(0x40000000), Color(0x80000000))
+                        )
+                    )
+            )
+            Column(modifier = Modifier.matchParentSize().padding(18.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Filled.LocationOn, contentDescription = null,
@@ -72,62 +102,52 @@ fun TodayScreen(location: SavedLocation, forecast: Forecast) {
                         location.displayName,
                         color = Color.White,
                         fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        style = shadowed
                     )
                     Spacer(Modifier.weight(1f))
-                    Text("now", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                    Text("now", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, style = shadowed)
                 }
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.weight(1f))
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "${Math.round(current.temperatureC)}°",
-                            color = Color.White,
-                            fontSize = 68.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            current.condition.label,
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            "Feels like ${Math.round(current.apparentTemperatureC)}°",
-                            color = Color.White.copy(alpha = 0.8f),
-                            fontSize = 13.sp
-                        )
-                    }
-                    WeatherGlyph(
-                        scene = current.condition.scene,
-                        isDay = current.isDay,
-                        modifier = Modifier.size(96.dp)
-                    )
-                }
-
-                Spacer(Modifier.height(12.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(Color.White.copy(alpha = 0.18f))
+                Text(
+                    "${Math.round(current.temperatureC)}°",
+                    color = Color.White,
+                    fontSize = 72.sp,
+                    fontWeight = FontWeight.Bold,
+                    style = shadowed
                 )
-                Spacer(Modifier.height(8.dp))
+                Text(
+                    current.condition.label,
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    style = shadowed
+                )
+                Text(
+                    "Feels like ${Math.round(current.apparentTemperatureC)}°",
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 13.sp,
+                    style = shadowed
+                )
+            }
+        }
 
-                // Quick stats
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    QuickStat(
-                        Icons.Filled.Air, "Wind",
-                        "${Format.wind(current.windSpeedKmh)} ${WeatherCode.windDirectionLabel(current.windDirectionDeg)}"
-                    )
-                    QuickStat(Icons.Filled.WaterDrop, "Humidity", Format.percent(current.humidityPct))
-                    QuickStat(Icons.Filled.WbSunny, "UV", "${Math.round(current.uvIndex)}")
-                }
+        Spacer(Modifier.height(16.dp))
+
+        // Quick stats sit on their own glass card (off the animation → always readable).
+        GlassCard(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                QuickStat(
+                    Icons.Filled.Air, "Wind",
+                    "${Format.wind(current.windSpeedKmh)} ${WeatherCode.windDirectionLabel(current.windDirectionDeg)}"
+                )
+                QuickStat(Icons.Filled.WaterDrop, "Humidity", Format.percent(current.humidityPct))
+                QuickStat(Icons.Filled.WbSunny, "UV", "${Math.round(current.uvIndex)}")
             }
         }
 
