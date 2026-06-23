@@ -48,16 +48,45 @@ chronolux-watchface/
         └── res/                      # Strings, colors, vector preview & icon
 ```
 
-## Building
+## Prebuilt APK (use straight away)
+
+A ready-to-install debug build is included at:
+
+```
+dist/ChronoLux-1.0.0-debug.apk
+```
+
+It is debug-signed, so it installs with no extra signing steps. Install it
+on a Galaxy Watch (or Wear OS emulator) over ADB:
+
+```
+# Pair the watch: Settings > Developer options > ADB debugging + Wireless debugging
+adb connect <watch-ip>:<port>
+adb install dist/ChronoLux-1.0.0-debug.apk
+```
+
+Then open the watch face picker, long-press the current face, tap **Add**
+(or **Customize**), and select **ChronoLux**. Tap **Customize** to open the
+on-watch editor for themes, layout and complications.
+
+> Note: this is a *debug* APK intended for sideloading and testing. For
+> store distribution, build a release variant signed with your own keystore
+> (see *Publishing notes* below).
+
+## Building from source
 
 1. Open the `chronolux-watchface` folder in **Android Studio** (Koala or
-   newer). Android Studio will offer to download the Gradle 8.7 wrapper
-   declared in `gradle/wrapper/gradle-wrapper.properties`.
+   newer), or build from the command line with the included wrapper.
 2. Let Gradle sync, then build:
    ```
    ./gradlew :app:assembleDebug
    ```
 3. The APK lands in `app/build/outputs/apk/debug/`.
+
+This project was verified to build with **Gradle 8.14.3**, **AGP 8.5.2**,
+**Kotlin 1.9.24**, **JDK 17+**, and Android **SDK 34** / **build-tools
+34.0.0**. The Gradle wrapper is committed, so `./gradlew` works without a
+preinstalled Gradle.
 
 ## Running on a watch or emulator
 

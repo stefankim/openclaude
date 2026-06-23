@@ -9,6 +9,7 @@ import android.graphics.Rect
 import android.graphics.Shader
 import android.graphics.Typeface
 import android.view.SurfaceHolder
+import androidx.wear.watchface.CanvasType
 import androidx.wear.watchface.ComplicationSlotsManager
 import androidx.wear.watchface.DrawMode
 import androidx.wear.watchface.Renderer

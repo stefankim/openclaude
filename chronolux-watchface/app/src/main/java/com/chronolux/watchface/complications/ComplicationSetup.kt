@@ -27,8 +27,11 @@ private val SUPPORTED_TYPES = listOf(
 )
 
 /**
- * Three slots: heart rate on the left, step count on the right and watch
- * battery along the bottom. All are user-reassignable from the editor.
+ * Three slots: step count on the left, day/date on the right and watch
+ * battery along the bottom. These are just the out-of-box defaults — every
+ * slot is user-reassignable from the editor (e.g. to a heart-rate provider
+ * if the watch exposes one). There is no system default source for heart
+ * rate, so it is offered through the picker rather than pre-filled.
  */
 fun createComplicationSlotsManager(
     context: Context,
@@ -47,7 +50,7 @@ fun createComplicationSlotsManager(
         canvasComplicationFactory = factory,
         supportedTypes = SUPPORTED_TYPES,
         defaultDataSourcePolicy = DefaultComplicationDataSourcePolicy(
-            SystemDataSources.DATA_SOURCE_HEART_RATE,
+            SystemDataSources.DATA_SOURCE_STEP_COUNT,
             ComplicationType.SHORT_TEXT
         ),
         bounds = ComplicationSlotBounds(
@@ -60,7 +63,7 @@ fun createComplicationSlotsManager(
         canvasComplicationFactory = factory,
         supportedTypes = SUPPORTED_TYPES,
         defaultDataSourcePolicy = DefaultComplicationDataSourcePolicy(
-            SystemDataSources.DATA_SOURCE_DAILY_STEPS,
+            SystemDataSources.DATA_SOURCE_DAY_AND_DATE,
             ComplicationType.SHORT_TEXT
         ),
         bounds = ComplicationSlotBounds(

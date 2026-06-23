@@ -91,7 +91,7 @@ class WatchFaceConfigStateHolder(
 
     fun setTicksEnabled(enabled: Boolean) {
         val session = editorSession ?: return
-        val setting = session.userStyleSchema.userStyleSettings
+        val setting = session.userStyleSchema.rootUserStyleSettings
             .firstOrNull { it.id.value == StyleIds.SHOW_TICKS } as? BooleanUserStyleSetting
             ?: return
         applyOption(setting, BooleanUserStyleSetting.BooleanOption.from(enabled))
