@@ -11,6 +11,7 @@ import com.dockerdroid.app.data.db.AppDatabase
 import com.dockerdroid.app.data.remote.ConnectionManager
 import com.dockerdroid.app.data.repository.ComposeRepository
 import com.dockerdroid.app.data.repository.SettingsRepository
+import com.dockerdroid.app.vm.QemuVmManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 
@@ -41,6 +42,9 @@ class AppContainer(context: Context) {
     }
 
     val serviceManager: DockerServiceManager by lazy { DockerServiceManager(shell, appScope) }
+
+    /** On-device QEMU VM that runs a real Docker daemon with no root. */
+    val vmManager: QemuVmManager by lazy { QemuVmManager(context, appScope) }
 
     val settingsRepository: SettingsRepository by lazy { SettingsRepository(context) }
 

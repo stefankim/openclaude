@@ -12,6 +12,7 @@ class ViewModelFactory(private val container: AppContainer) : ViewModelProvider.
     override fun <T : ViewModel> create(modelClass: Class<T>): T = when {
         modelClass.isAssignableFrom(InstallViewModel::class.java) -> InstallViewModel(container)
         modelClass.isAssignableFrom(RemoteViewModel::class.java) -> RemoteViewModel(container)
+        modelClass.isAssignableFrom(VmViewModel::class.java) -> VmViewModel(container)
         modelClass.isAssignableFrom(DashboardViewModel::class.java) -> DashboardViewModel(container)
         modelClass.isAssignableFrom(ContainersViewModel::class.java) -> ContainersViewModel(container)
         modelClass.isAssignableFrom(ImagesViewModel::class.java) -> ImagesViewModel(container)

@@ -74,6 +74,10 @@ wireframes: [docs/WIREFRAMES.md](docs/WIREFRAMES.md).
 - **Remote hosts (SSH)** — manage a Docker Engine on another machine (e.g. Docker
   Desktop on a Mac) with **no phone root**; works on locked devices. See
   [docs/REMOTE.md](docs/REMOTE.md).
+- **On-device VM (no root)** — boot a real Docker Engine in a bundled QEMU Linux VM,
+  so unrootable devices can run containers locally (software-emulated, slow). Engine
+  + wiring are in-app; the native QEMU payload is built separately. See
+  [docs/VM.md](docs/VM.md).
 - **Auto start on boot** — opt-in `BOOT_COMPLETED` receiver.
 - **Security** — root prompted only when needed, no stored credentials, downloaded
   binaries SHA-256 verified, app data sandboxed.

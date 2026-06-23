@@ -30,6 +30,7 @@ import com.dockerdroid.app.ui.screens.ImagesScreen
 import com.dockerdroid.app.ui.screens.InstallScreen
 import com.dockerdroid.app.ui.screens.RemoteConnectScreen
 import com.dockerdroid.app.ui.screens.SettingsScreen
+import com.dockerdroid.app.ui.screens.VmScreen
 import com.dockerdroid.app.ui.screens.TerminalScreen
 import com.dockerdroid.app.ui.screens.WelcomeScreen
 import com.dockerdroid.app.ui.theme.DockerDroidTheme
@@ -40,6 +41,7 @@ import com.dockerdroid.app.ui.viewmodel.ImagesViewModel
 import com.dockerdroid.app.ui.viewmodel.InstallViewModel
 import com.dockerdroid.app.ui.viewmodel.RemoteViewModel
 import com.dockerdroid.app.ui.viewmodel.SettingsViewModel
+import com.dockerdroid.app.ui.viewmodel.VmViewModel
 import com.dockerdroid.app.ui.viewmodel.ViewModelFactory
 
 class MainActivity : ComponentActivity() {
@@ -106,7 +108,16 @@ private fun DockerDroidApp(
                 WelcomeScreen(
                     onContinue = { navController.navigate(Destination.Install.route) },
                     onConnectRemote = { navController.navigate(Destination.RemoteConnect.route) },
+                    onLocalVm = { navController.navigate(Destination.LocalVm.route) },
                 )
+            }
+            composable(Destination.LocalVm.route) {
+                val vm: VmViewModel = viewModel(factory = factory)
+                VmScreen(vm, onRunning = {
+                    navController.navigate(Destination.Dashboard.route) {
+                        popUpTo(Destination.Welcome.route) { inclusive = true }
+                    }
+                })
             }
             composable(Destination.RemoteConnect.route) {
                 val vm: RemoteViewModel = viewModel(factory = factory)

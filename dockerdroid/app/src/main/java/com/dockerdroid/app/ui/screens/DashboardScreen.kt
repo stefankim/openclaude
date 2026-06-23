@@ -29,12 +29,15 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
     val connection by viewModel.connection.collectAsState()
 
     LaunchedEffect(daemon, connection) {
-        if (connection is Connection.Remote || daemon is DaemonState.Running) viewModel.refresh()
+        // Refresh whenever we have a reachable daemon: any non-local connection, or a
+        // running on-device daemon.
+        if (connection !is Connection.Local || daemon is DaemonState.Running) viewModel.refresh()
     }
 
     Column(Modifier.fillMaxWidth().padding(16.dp)) {
         when (val c = connection) {
             is Connection.Remote -> RemoteCard(c.host.label)
+            Connection.Vm -> RemoteCard("Local Docker VM")
             Connection.Local -> DaemonCard(daemon, onStart = viewModel::startDaemon, onStop = viewModel::stopDaemon)
         }
         Spacer(Modifier.size(16.dp))

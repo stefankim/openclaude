@@ -8,10 +8,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 
-/** Whether the active [DockerApiClient] targets this device or a remote host. */
+/** Which Docker daemon the active [DockerApiClient] targets. */
 sealed interface Connection {
+    /** On-device daemon over the unix socket (requires root). */
     data object Local : Connection
+
+    /** A remote daemon reached over SSH. */
     data class Remote(val host: RemoteHost) : Connection
+
+    /** A real daemon running in the on-device QEMU VM, reached over loopback TCP. */
+    data object Vm : Connection
 }
 
 /**
@@ -63,6 +69,17 @@ class ConnectionManager(context: Context) {
         return connectRemote(host, auth)
     }
 
+    /**
+     * Point the active client at the on-device VM's Docker daemon (port-forwarded to
+     * loopback by QEMU). The VM lifecycle itself is owned by QemuVmManager.
+     */
+    fun useVm(port: Int = VM_DOCKER_PORT) {
+        sshConnection?.close()
+        sshConnection = null
+        client = DockerApiClient.tcp("127.0.0.1", port)
+        _connection.value = Connection.Vm
+    }
+
     /** Switch back to the on-device daemon. */
     fun useLocal() {
         sshConnection?.close()
@@ -75,5 +92,10 @@ class ConnectionManager(context: Context) {
     fun forgetRemote() {
         store.clear()
         useLocal()
+    }
+
+    private companion object {
+        // Mirrors VmImages.DOCKER_PORT; kept literal to avoid a vm→remote package dep.
+        const val VM_DOCKER_PORT = 2375
     }
 }

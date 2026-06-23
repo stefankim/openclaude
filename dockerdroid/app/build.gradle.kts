@@ -58,6 +58,11 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+        jniLibs {
+            // The QEMU engine ships as a jniLib and must be executed from
+            // nativeLibraryDir, so it has to be extracted to disk at install time.
+            useLegacyPackaging = true
+        }
     }
 
     testOptions {

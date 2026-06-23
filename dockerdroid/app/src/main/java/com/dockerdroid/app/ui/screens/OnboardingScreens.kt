@@ -36,7 +36,11 @@ import com.dockerdroid.app.core.install.InstallProgress
 import com.dockerdroid.app.ui.viewmodel.InstallViewModel
 
 @Composable
-fun WelcomeScreen(onContinue: () -> Unit, onConnectRemote: () -> Unit = {}) {
+fun WelcomeScreen(
+    onContinue: () -> Unit,
+    onConnectRemote: () -> Unit = {},
+    onLocalVm: () -> Unit = {},
+) {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center,
@@ -53,6 +57,8 @@ fun WelcomeScreen(onContinue: () -> Unit, onConnectRemote: () -> Unit = {}) {
         Button(onClick = onContinue) { Text("Set up on this device (root)") }
         Spacer(Modifier.size(12.dp))
         OutlinedButton(onClick = onConnectRemote) { Text("Connect to a remote host (SSH)") }
+        Spacer(Modifier.size(12.dp))
+        OutlinedButton(onClick = onLocalVm) { Text("Run Docker in a local VM (no root)") }
     }
 }
 

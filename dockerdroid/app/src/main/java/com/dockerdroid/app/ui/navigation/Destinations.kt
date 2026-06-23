@@ -15,6 +15,7 @@ enum class Destination(val route: String, val label: String, val icon: ImageVect
     RootCheck("root_check", "Root", Icons.Filled.Dashboard, inBottomBar = false),
     Install("install", "Install", Icons.Filled.Dashboard, inBottomBar = false),
     RemoteConnect("remote_connect", "Remote", Icons.Filled.Dashboard, inBottomBar = false),
+    LocalVm("local_vm", "VM", Icons.Filled.Dashboard, inBottomBar = false),
 
     Dashboard("dashboard", "Dashboard", Icons.Filled.Dashboard),
     Containers("containers", "Containers", Icons.Filled.ViewInAr),

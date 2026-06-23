@@ -33,20 +33,28 @@ import okhttp3.RequestBody.Companion.toRequestBody
  */
 class DockerApiClient private constructor(
     private val client: OkHttpClient,
+    private val authority: String = "localhost",
     private val apiVersion: String = "v1.45",
 ) {
     private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
-    private val base = "http://localhost/$apiVersion"
+    private val base = "http://$authority/$apiVersion"
     private val jsonMedia = "application/json".toMediaType()
 
     companion object {
-        /** Client for the daemon running on this device. */
+        /** Client for the daemon running on this device (unix socket). */
         fun local(socketPath: String = Paths.SOCKET, apiVersion: String = "v1.45") =
-            DockerApiClient(UnixSocketFactory.clientFor(socketPath), apiVersion)
+            DockerApiClient(UnixSocketFactory.clientFor(socketPath), "localhost", apiVersion)
 
         /** Client for a remote daemon, given a transport-configured [OkHttpClient]. */
         fun remote(client: OkHttpClient, apiVersion: String = "v1.45") =
-            DockerApiClient(client, apiVersion)
+            DockerApiClient(client, "localhost", apiVersion)
+
+        /**
+         * Client for a daemon reachable over plain TCP — used for the on-device VM,
+         * whose guest dockerd is port-forwarded to `127.0.0.1:<port>` by QEMU.
+         */
+        fun tcp(host: String, port: Int, apiVersion: String = "v1.45") =
+            DockerApiClient(OkHttpClient(), "$host:$port", apiVersion)
     }
 
     // ---- Images -----------------------------------------------------------
@@ -100,7 +108,7 @@ class DockerApiClient private constructor(
 
     suspend fun ping(): Boolean = withContext(Dispatchers.IO) {
         runCatching {
-            client.newCall(Request.Builder().url("http://localhost/_ping").build()).execute()
+            client.newCall(Request.Builder().url("http://$authority/_ping").build()).execute()
                 .use { it.isSuccessful }
         }.getOrDefault(false)
     }
