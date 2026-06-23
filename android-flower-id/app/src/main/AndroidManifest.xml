@@ -41,6 +41,15 @@
             android:theme="@style/Theme.FlowerID.Settings"
             android:parentActivityName=".MainActivity" />
 
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocale"
+                android:value="true" />
+        </service>
+
     </application>
 
 </manifest>
