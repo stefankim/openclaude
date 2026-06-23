@@ -14,9 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import com.openclaude.weather.domain.WeatherScene
 import kotlin.math.PI
@@ -37,228 +40,357 @@ fun WeatherSceneView(
 ) {
     val transition = rememberInfiniteTransition(label = "weather")
 
-    // Master clock 0..1 driving every periodic motion.
+    // Master clock 0..1 driving fast periodic motion (rain/snow particles).
     val t by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(6000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
+        0f, 1f,
+        infiniteRepeatable(tween(6000, easing = LinearEasing), RepeatMode.Restart),
         label = "t"
     )
-
     // Slow clock for sun rotation / cloud drift.
     val slow by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(24000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
+        0f, 1f,
+        infiniteRepeatable(tween(26000, easing = LinearEasing), RepeatMode.Restart),
         label = "slow"
     )
-
-    // Lightning flash pulses.
+    // Gentle breathing clock for glow pulsing and cloud bob.
+    val pulse by transition.animateFloat(
+        0f, 1f,
+        infiniteRepeatable(tween(4200, easing = LinearEasing), RepeatMode.Restart),
+        label = "pulse"
+    )
+    // Lightning flash cycle.
     val flash by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2800, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
+        0f, 1f,
+        infiniteRepeatable(tween(3200, easing = LinearEasing), RepeatMode.Restart),
         label = "flash"
     )
 
     // Stable random seeds for particles so they don't jump each recomposition.
-    val rng = remember { Random(scene.ordinal * 31 + if (isDay) 1 else 0) }
-    val rainSeeds = remember(scene) { List(70) { rng.nextFloat() to rng.nextFloat() } }
-    val snowSeeds = remember(scene) { List(50) { Triple(rng.nextFloat(), rng.nextFloat(), rng.nextFloat()) } }
-    val starSeeds = remember(scene) { List(40) { Triple(rng.nextFloat(), rng.nextFloat(), rng.nextFloat()) } }
+    val rng = remember(scene, isDay) { Random(scene.ordinal * 31 + if (isDay) 1 else 0) }
+    // rain: x, phase, speed, length
+    val rainSeeds = remember(scene, isDay) {
+        List(80) { listOf(rng.nextFloat(), rng.nextFloat(), 0.7f + rng.nextFloat() * 0.6f, 0.7f + rng.nextFloat() * 0.7f) }
+    }
+    val splashSeeds = remember(scene, isDay) { List(7) { rng.nextFloat() to rng.nextFloat() } }
+    // snow: x, phase, speed, size
+    val snowSeeds = remember(scene, isDay) {
+        List(60) { listOf(rng.nextFloat(), rng.nextFloat(), 0.5f + rng.nextFloat(), 0.5f + rng.nextFloat()) }
+    }
+    val starSeeds = remember(scene, isDay) { List(46) { Triple(rng.nextFloat(), rng.nextFloat(), rng.nextFloat()) } }
 
     Canvas(modifier = modifier) {
         when (scene) {
-            WeatherScene.CLEAR_DAY -> drawSun(slow, t)
-            WeatherScene.CLEAR_NIGHT -> { drawStars(starSeeds, t); drawMoon() }
+            WeatherScene.CLEAR_DAY -> drawSun(slow, pulse)
+            WeatherScene.CLEAR_NIGHT -> {
+                drawStars(starSeeds, t)
+                drawShootingStar(t)
+                drawMoon()
+            }
             WeatherScene.PARTLY_CLOUDY -> {
-                if (isDay) drawSun(slow, t, scale = 0.7f, center = Offset(size.width * 0.72f, size.height * 0.34f))
-                else { drawStars(starSeeds, t); drawMoon(Offset(size.width * 0.72f, size.height * 0.32f)) }
-                drawCloud(slow, Offset(size.width * 0.40f, size.height * 0.52f), 1f, Color.White.copy(alpha = 0.95f))
+                if (isDay) drawSun(slow, pulse, scale = 0.66f, center = Offset(size.width * 0.74f, size.height * 0.32f))
+                else { drawStars(starSeeds, t); drawMoon(Offset(size.width * 0.74f, size.height * 0.30f)) }
+                drawCloud(slow, Offset(size.width * 0.40f, size.height * 0.56f), 1f, Color.White, pulse)
             }
             WeatherScene.CLOUDY -> {
-                drawCloud(slow, Offset(size.width * 0.36f, size.height * 0.42f), 1.1f, Color.White.copy(alpha = 0.85f))
-                drawCloud(slow * 0.7f, Offset(size.width * 0.60f, size.height * 0.58f), 0.9f, Color(0xFFDDE3EA).copy(alpha = 0.9f))
+                drawCloud(slow * 0.6f, Offset(size.width * 0.30f, size.height * 0.40f), 1.25f, Color(0xFFCED6DF), pulse, depth = true)
+                drawCloud(slow, Offset(size.width * 0.58f, size.height * 0.55f), 1.05f, Color.White, pulse)
             }
-            WeatherScene.FOG -> drawFog(slow)
+            WeatherScene.FOG -> {
+                drawCloud(slow, Offset(size.width * 0.5f, size.height * 0.34f), 1.0f, Color(0xFFDDE3EA), pulse)
+                drawFog(slow)
+            }
             WeatherScene.RAIN -> {
-                drawCloud(slow, Offset(size.width * 0.5f, size.height * 0.34f), 1.1f, Color(0xFFB9C2CC))
+                drawCloud(slow, Offset(size.width * 0.5f, size.height * 0.32f), 1.15f, Color(0xFFB9C2CC), pulse, depth = true)
                 drawRain(rainSeeds, t)
+                drawSplashes(splashSeeds, t)
             }
             WeatherScene.SNOW -> {
-                drawCloud(slow, Offset(size.width * 0.5f, size.height * 0.32f), 1.1f, Color(0xFFD7DEE6))
+                drawCloud(slow, Offset(size.width * 0.5f, size.height * 0.30f), 1.15f, Color(0xFFE0E6EC), pulse, depth = true)
                 drawSnow(snowSeeds, t)
             }
             WeatherScene.THUNDERSTORM -> {
-                drawCloud(slow, Offset(size.width * 0.5f, size.height * 0.32f), 1.2f, Color(0xFF7E8794))
+                drawCloud(slow, Offset(size.width * 0.5f, size.height * 0.30f), 1.25f, Color(0xFF7E8794), pulse, depth = true)
                 drawRain(rainSeeds, t, color = Color(0xCCBFD0E0))
+                drawSplashes(splashSeeds, t)
                 drawLightning(flash)
             }
         }
     }
 }
 
+// ---------------------------------------------------------------------------------------
+
 private fun DrawScope.drawSun(
     slow: Float,
-    t: Float,
+    pulse: Float,
     scale: Float = 1f,
-    center: Offset = Offset(size.width * 0.5f, size.height * 0.4f)
+    center: Offset = Offset(size.width * 0.5f, size.height * 0.42f)
 ) {
-    val radius = size.minDimension * 0.13f * scale
-    // Soft glow
-    drawCircle(Color(0x33FFE08A), radius * 2.4f, center)
-    drawCircle(Color(0x55FFD56B), radius * 1.7f, center)
-    // Rotating rays
+    val radius = size.minDimension * 0.135f * scale
+    val breathe = 1f + 0.06f * sin(pulse * 2 * PI).toFloat()
+
+    // Soft radial glow.
+    drawCircle(
+        brush = Brush.radialGradient(
+            colorStops = arrayOf(
+                0f to Color(0x66FFE08A),
+                0.5f to Color(0x33FFD56B),
+                1f to Color(0x00FFD56B)
+            ),
+            center = center,
+            radius = radius * 3.2f * breathe
+        ),
+        radius = radius * 3.2f * breathe,
+        center = center
+    )
+
+    // Rotating rays with a gentle length pulse.
     rotate(degrees = slow * 360f, pivot = center) {
-        val rayLen = radius * (0.9f + 0.12f * sin(t * 2 * PI).toFloat())
+        val rayLen = radius * (0.85f + 0.18f * sin(pulse * 2 * PI).toFloat())
         for (i in 0 until 12) {
             val a = (i * 30f) * PI.toFloat() / 180f
-            val start = Offset(center.x + cos(a) * radius * 1.35f, center.y + sin(a) * radius * 1.35f)
-            val end = Offset(center.x + cos(a) * (radius * 1.35f + rayLen), center.y + sin(a) * (radius * 1.35f + rayLen))
-            drawLine(Color(0xFFFFD25E), start, end, strokeWidth = radius * 0.16f)
+            val r1 = radius * 1.4f
+            val start = Offset(center.x + cos(a) * r1, center.y + sin(a) * r1)
+            val end = Offset(center.x + cos(a) * (r1 + rayLen), center.y + sin(a) * (r1 + rayLen))
+            drawLine(Color(0xFFFFD25E), start, end, strokeWidth = radius * 0.16f, cap = StrokeCap.Round)
         }
     }
-    drawCircle(Color(0xFFFFC94D), radius, center)
-    drawCircle(Color(0xFFFFE08A), radius * 0.82f, center)
+
+    // Disc with a soft inner gradient.
+    drawCircle(
+        brush = Brush.radialGradient(
+            colorStops = arrayOf(0f to Color(0xFFFFE9A6), 0.7f to Color(0xFFFFC94D), 1f to Color(0xFFFFB300)),
+            center = Offset(center.x - radius * 0.25f, center.y - radius * 0.25f),
+            radius = radius * 1.3f
+        ),
+        radius = radius,
+        center = center
+    )
 }
 
-private fun DrawScope.drawMoon(center: Offset = Offset.Unspecified) {
-    val c = if (center == Offset.Unspecified) Offset(size.width * 0.6f, size.height * 0.32f) else center
-    val r = size.minDimension * 0.11f
-    drawCircle(Color(0x33FFFFFF), r * 1.8f, c)
-    drawCircle(Color(0xFFF2F4F8), r, c)
-    // Crescent shadow
-    drawCircle(Color(0x00000000), r, c)
+private fun DrawScope.drawMoon(center: Offset = Offset(size.width * 0.6f, size.height * 0.32f)) {
+    val r = size.minDimension * 0.12f
     drawCircle(
-        color = Color(0x551B2A4A),
-        radius = r,
-        center = Offset(c.x + r * 0.45f, c.y - r * 0.2f)
+        brush = Brush.radialGradient(
+            colorStops = arrayOf(0f to Color(0x55FFFFFF), 1f to Color(0x00FFFFFF)),
+            center = center, radius = r * 2.4f
+        ),
+        radius = r * 2.4f, center = center
     )
+    drawCircle(Color(0xFFF2F4F8), r, center)
+    // Crescent shadow.
+    drawCircle(Color(0x66152138), r, Offset(center.x + r * 0.5f, center.y - r * 0.22f))
+    // A couple of craters for character.
+    drawCircle(Color(0x22152138), r * 0.16f, Offset(center.x - r * 0.3f, center.y + r * 0.1f))
+    drawCircle(Color(0x1A152138), r * 0.1f, Offset(center.x - r * 0.05f, center.y + r * 0.4f))
 }
 
 private fun DrawScope.drawStars(seeds: List<Triple<Float, Float, Float>>, t: Float) {
     seeds.forEach { (x, y, phase) ->
-        val twinkle = 0.4f + 0.6f * (0.5f + 0.5f * sin((t + phase) * 2 * PI).toFloat())
+        val twinkle = 0.35f + 0.65f * (0.5f + 0.5f * sin((t + phase) * 6 * PI).toFloat())
         val r = size.minDimension * (0.004f + 0.006f * phase)
-        drawCircle(
-            color = Color.White.copy(alpha = twinkle),
-            radius = r,
-            center = Offset(x * size.width, y * size.height * 0.7f)
-        )
+        drawCircle(Color.White.copy(alpha = twinkle), r, Offset(x * size.width, y * size.height * 0.72f))
     }
 }
 
-private fun DrawScope.drawCloud(drift: Float, center: Offset, scale: Float, color: Color) {
-    val dx = (drift % 1f - 0.5f) * size.width * 0.12f
-    val c = Offset(center.x + dx, center.y)
-    val u = size.minDimension * 0.09f * scale
-    val baseline = c.y + u * 1.0f // flat bottom of the cloud
+private fun DrawScope.drawShootingStar(t: Float) {
+    // Streaks across once per master cycle, briefly.
+    val window = 0.12f
+    if (t > window) return
+    val k = t / window
+    val sx = (0.15f + 0.55f * k) * size.width
+    val sy = (0.12f + 0.25f * k) * size.height
+    val tail = size.minDimension * 0.18f
+    val alpha = (1f - k)
+    drawLine(
+        brush = Brush.linearGradient(
+            colors = listOf(Color.White.copy(alpha = 0f), Color.White.copy(alpha = alpha)),
+            start = Offset(sx - tail, sy - tail * 0.5f),
+            end = Offset(sx, sy)
+        ),
+        start = Offset(sx - tail, sy - tail * 0.5f),
+        end = Offset(sx, sy),
+        strokeWidth = size.minDimension * 0.01f,
+        cap = StrokeCap.Round
+    )
+    drawCircle(Color.White.copy(alpha = alpha), size.minDimension * 0.012f, Offset(sx, sy))
+}
 
-    // Body: a rounded slab gives a soft, flat base (no poking bumps, no sharp corners).
+private fun DrawScope.drawCloud(
+    driftPhase: Float,
+    center: Offset,
+    scale: Float,
+    color: Color,
+    pulse: Float,
+    depth: Boolean = false
+) {
+    val dx = ((driftPhase % 1f) - 0.5f) * size.width * 0.14f
+    val bob = sin((driftPhase + pulse) * 2 * PI).toFloat() * size.minDimension * 0.008f
+    val c = Offset(center.x + dx, center.y + bob)
+    val u = size.minDimension * 0.09f * scale
     val left = c.x - u * 2.1f
     val right = c.x + u * 2.1f
+    val baseline = c.y + u
+
+    // Soft drop shadow under the cloud for depth.
+    if (depth) {
+        drawOval(
+            color = Color(0x22000000),
+            topLeft = Offset(left + u * 0.2f, baseline - u * 0.1f),
+            size = Size((right - left) - u * 0.4f, u * 0.5f)
+        )
+    }
+
+    // Body: rounded slab with a soft top→bottom gradient for volume.
+    val bodyTop = c.y + u * 0.1f
     drawRoundRect(
-        color = color,
-        topLeft = Offset(left, c.y + u * 0.1f),
-        size = Size(right - left, baseline - (c.y + u * 0.1f)),
+        brush = Brush.verticalGradient(
+            colors = listOf(lighten(color, 0.10f), color, darken(color, 0.10f)),
+            startY = bodyTop - u, endY = baseline
+        ),
+        topLeft = Offset(left, bodyTop),
+        size = Size(right - left, baseline - bodyTop),
         cornerRadius = CornerRadius(u * 0.55f, u * 0.55f)
     )
 
-    // Puffs along the top — centres kept high enough that their bottoms stay within the
-    // body, so the union reads as one smooth cloud rather than separate discs.
+    // Fluffy puffs with soft (radial-gradient) edges.
     val puffs = listOf(
-        Triple(-1.45f, 0.05f, 0.78f),
-        Triple(-0.60f, -0.45f, 1.05f),
-        Triple(0.30f, -0.62f, 1.20f),
-        Triple(1.15f, -0.30f, 0.95f),
-        Triple(1.80f, 0.05f, 0.72f)
+        Triple(-1.45f, 0.05f, 0.80f),
+        Triple(-0.60f, -0.45f, 1.08f),
+        Triple(0.30f, -0.64f, 1.24f),
+        Triple(1.15f, -0.30f, 0.98f),
+        Triple(1.80f, 0.05f, 0.74f)
     )
     puffs.forEach { (fx, fy, fr) ->
-        drawCircle(color, u * fr, Offset(c.x + u * fx, c.y + u * fy))
+        softPuff(Offset(c.x + u * fx, c.y + u * fy), u * fr, color)
     }
 
-    // Soft top highlight + bottom shading for depth.
+    // Top highlight sheen.
+    drawCircle(Color.White.copy(alpha = 0.20f), u * 0.8f, Offset(c.x - u * 0.1f, c.y - u * 0.78f))
+}
+
+/** A circle with an opaque core fading to transparent at the rim — gives clouds soft edges. */
+private fun DrawScope.softPuff(center: Offset, radius: Float, color: Color) {
     drawCircle(
-        color = Color.White.copy(alpha = 0.18f),
-        radius = u * 0.85f,
-        center = Offset(c.x - u * 0.1f, c.y - u * 0.75f)
-    )
-    drawRoundRect(
-        color = Color.Black.copy(alpha = 0.06f),
-        topLeft = Offset(left, baseline - u * 0.45f),
-        size = Size(right - left, u * 0.45f),
-        cornerRadius = CornerRadius(u * 0.4f, u * 0.4f)
+        brush = Brush.radialGradient(
+            colorStops = arrayOf(0f to color, 0.78f to color, 1f to color.copy(alpha = 0f)),
+            center = center, radius = radius
+        ),
+        radius = radius,
+        center = center
     )
 }
 
-private fun DrawScope.drawRain(seeds: List<Pair<Float, Float>>, t: Float, color: Color = Color(0xCC9FC3E8)) {
-    val len = size.height * 0.06f
-    seeds.forEach { (x, phase) ->
-        val prog = (t + phase) % 1f
+private fun DrawScope.drawRain(seeds: List<List<Float>>, t: Float, color: Color = Color(0xCC9FC3E8)) {
+    seeds.forEach { s ->
+        val x = s[0]; val phase = s[1]; val speed = s[2]; val lenF = s[3]
+        val prog = (t * speed + phase) % 1f
+        val len = size.height * 0.07f * lenF
         val sx = x * size.width
-        val sy = size.height * 0.42f + prog * size.height * 0.6f
+        val sy = size.height * 0.40f + prog * size.height * 0.62f
+        // depth: closer drops (bigger lenF) are brighter/thicker
         drawLine(
-            color = color,
+            color = color.copy(alpha = (color.alpha * (0.5f + 0.5f * lenF)).coerceIn(0f, 1f)),
             start = Offset(sx, sy),
-            end = Offset(sx - len * 0.25f, sy + len),
-            strokeWidth = size.minDimension * 0.006f
+            end = Offset(sx - len * 0.22f, sy + len),
+            strokeWidth = size.minDimension * (0.004f + 0.004f * lenF),
+            cap = StrokeCap.Round
         )
     }
 }
 
-private fun DrawScope.drawSnow(seeds: List<Triple<Float, Float, Float>>, t: Float) {
-    seeds.forEach { (x, phase, spd) ->
-        val prog = (t * (0.5f + spd) + phase) % 1f
-        val sway = sin((prog + phase) * 4 * PI).toFloat() * size.width * 0.03f
-        val sx = x * size.width + sway
-        val sy = size.height * 0.36f + prog * size.height * 0.64f
+private fun DrawScope.drawSplashes(seeds: List<Pair<Float, Float>>, t: Float) {
+    val groundY = size.height * 0.94f
+    seeds.forEach { (x, phase) ->
+        val prog = (t * 1.6f + phase) % 1f
+        if (prog > 0.6f) return@forEach
+        val k = prog / 0.6f
+        val r = size.minDimension * (0.01f + 0.05f * k)
+        val alpha = (1f - k) * 0.5f
         drawCircle(
-            color = Color.White.copy(alpha = 0.9f),
-            radius = size.minDimension * (0.006f + 0.006f * spd),
-            center = Offset(sx, sy)
+            color = Color(0xFF9FC3E8).copy(alpha = alpha),
+            radius = r,
+            center = Offset(x * size.width, groundY),
+            style = Stroke(width = size.minDimension * 0.006f)
         )
+    }
+}
+
+private fun DrawScope.drawSnow(seeds: List<List<Float>>, t: Float) {
+    seeds.forEach { s ->
+        val x = s[0]; val phase = s[1]; val spd = s[2]; val sizeF = s[3]
+        val prog = (t * (0.4f + spd * 0.5f) + phase) % 1f
+        val sway = sin((prog + phase) * 4 * PI).toFloat() * size.width * 0.035f
+        val sx = x * size.width + sway
+        val sy = size.height * 0.32f + prog * size.height * 0.66f
+        val r = size.minDimension * (0.006f + 0.008f * sizeF)
+        drawCircle(Color.White.copy(alpha = 0.55f + 0.4f * sizeF), r, Offset(sx, sy))
     }
 }
 
 private fun DrawScope.drawFog(slow: Float) {
-    for (i in 0 until 5) {
-        val y = size.height * (0.3f + i * 0.12f)
-        val dx = sin((slow + i * 0.2f) * 2 * PI).toFloat() * size.width * 0.06f
-        drawRect(
-            color = Color.White.copy(alpha = 0.10f + 0.04f * (i % 2)),
+    for (i in 0 until 6) {
+        val y = size.height * (0.28f + i * 0.11f)
+        val dx = sin((slow + i * 0.18f) * 2 * PI).toFloat() * size.width * 0.08f
+        val alpha = 0.10f + 0.05f * (i % 2)
+        drawRoundRect(
+            brush = Brush.horizontalGradient(
+                listOf(Color.White.copy(alpha = 0f), Color.White.copy(alpha = alpha), Color.White.copy(alpha = 0f))
+            ),
             topLeft = Offset(dx, y),
-            size = Size(size.width, size.height * 0.06f)
+            size = Size(size.width, size.height * 0.07f),
+            cornerRadius = CornerRadius(size.height * 0.04f, size.height * 0.04f)
         )
     }
 }
 
 private fun DrawScope.drawLightning(flash: Float) {
-    // Two short flashes per cycle.
     val intensity = when {
-        flash < 0.06f -> 1f - flash / 0.06f
-        flash in 0.5f..0.56f -> 1f - (flash - 0.5f) / 0.06f
+        flash < 0.05f -> 1f - flash / 0.05f
+        flash in 0.10f..0.14f -> 1f - (flash - 0.10f) / 0.04f // double-flash flicker
         else -> 0f
     }
     if (intensity <= 0f) return
-    drawRect(Color.White.copy(alpha = 0.18f * intensity), size = size)
-    val bolt = Path().apply {
-        val x = size.width * 0.5f
-        moveTo(x, size.height * 0.36f)
-        lineTo(x - size.width * 0.05f, size.height * 0.55f)
-        lineTo(x + size.width * 0.02f, size.height * 0.55f)
-        lineTo(x - size.width * 0.06f, size.height * 0.78f)
-        lineTo(x + size.width * 0.04f, size.height * 0.52f)
-        lineTo(x - size.width * 0.02f, size.height * 0.52f)
+
+    // Whole-scene flash + afterglow.
+    drawRect(Color.White.copy(alpha = 0.16f * intensity), size = size)
+
+    val x = size.width * 0.5f
+    val top = size.height * 0.34f
+    val main = Path().apply {
+        moveTo(x, top)
+        lineTo(x - size.width * 0.06f, top + size.height * 0.16f)
+        lineTo(x + size.width * 0.01f, top + size.height * 0.18f)
+        lineTo(x - size.width * 0.07f, top + size.height * 0.40f)
+        lineTo(x + size.width * 0.05f, top + size.height * 0.14f)
+        lineTo(x - size.width * 0.01f, top + size.height * 0.13f)
         close()
     }
-    drawPath(bolt, Color(0xFFFFE57A).copy(alpha = intensity))
+    // Branch.
+    val branch = Path().apply {
+        moveTo(x - size.width * 0.025f, top + size.height * 0.18f)
+        lineTo(x - size.width * 0.12f, top + size.height * 0.30f)
+        lineTo(x - size.width * 0.05f, top + size.height * 0.30f)
+    }
+    val glow = Color(0xFFFFE57A).copy(alpha = intensity)
+    drawPath(branch, Color(0xFFFFF3C0).copy(alpha = intensity * 0.8f), style = Stroke(width = size.minDimension * 0.012f, cap = StrokeCap.Round))
+    drawPath(main, glow)
+    // Bright core.
+    drawPath(main, Color.White.copy(alpha = intensity * 0.6f), style = Stroke(width = size.minDimension * 0.01f))
 }
+
+// ---- small colour helpers ----
+
+private fun lighten(c: Color, amount: Float): Color = Color(
+    red = (c.red + (1f - c.red) * amount).coerceIn(0f, 1f),
+    green = (c.green + (1f - c.green) * amount).coerceIn(0f, 1f),
+    blue = (c.blue + (1f - c.blue) * amount).coerceIn(0f, 1f),
+    alpha = c.alpha
+)
+
+private fun darken(c: Color, amount: Float): Color = Color(
+    red = (c.red * (1f - amount)).coerceIn(0f, 1f),
+    green = (c.green * (1f - amount)).coerceIn(0f, 1f),
+    blue = (c.blue * (1f - amount)).coerceIn(0f, 1f),
+    alpha = c.alpha
+)
