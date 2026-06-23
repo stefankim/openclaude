@@ -67,7 +67,8 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                         isDay = snapshot.isDay,
                         phase = phase,
                         widthPx = wPx,
-                        heightPx = hPx
+                        heightPx = hPx,
+                        windKmh = snapshot.windKmh
                     )
                     views.setImageViewBitmap(R.id.widget_scene, bitmap)
                     views.setTextViewText(R.id.widget_temp, Format.tempPrecise(snapshot.tempC))

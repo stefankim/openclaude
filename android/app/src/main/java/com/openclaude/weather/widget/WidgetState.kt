@@ -11,6 +11,7 @@ object WidgetState {
     private const val KEY_NAME = "name"
     private const val KEY_CONDITION = "condition"
     private const val KEY_UPDATED = "updated"
+    private const val KEY_WIND = "wind"
 
     data class Snapshot(
         val tempC: Double,
@@ -18,6 +19,7 @@ object WidgetState {
         val isDay: Boolean,
         val locationName: String,
         val conditionLabel: String,
+        val windKmh: Double,
         val updatedAtMillis: Long
     )
 
@@ -28,6 +30,7 @@ object WidgetState {
             putBoolean(KEY_IS_DAY, snapshot.isDay)
             putString(KEY_NAME, snapshot.locationName)
             putString(KEY_CONDITION, snapshot.conditionLabel)
+            putFloat(KEY_WIND, snapshot.windKmh.toFloat())
             putLong(KEY_UPDATED, snapshot.updatedAtMillis)
             apply()
         }
@@ -42,6 +45,7 @@ object WidgetState {
             isDay = p.getBoolean(KEY_IS_DAY, true),
             locationName = p.getString(KEY_NAME, "—") ?: "—",
             conditionLabel = p.getString(KEY_CONDITION, "") ?: "",
+            windKmh = p.getFloat(KEY_WIND, 0f).toDouble(),
             updatedAtMillis = p.getLong(KEY_UPDATED, 0L)
         )
     }

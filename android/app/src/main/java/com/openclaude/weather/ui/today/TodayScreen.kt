@@ -79,7 +79,8 @@ fun TodayScreen(location: SavedLocation, forecast: Forecast) {
             WeatherSceneView(
                 scene = current.condition.scene,
                 isDay = current.isDay,
-                modifier = Modifier.matchParentSize()
+                modifier = Modifier.matchParentSize(),
+                windKmh = current.windSpeedKmh
             )
             // Scrim: darker toward the bottom where the temperature/labels sit.
             Box(

@@ -25,6 +25,7 @@ object WidgetUpdater {
                 isDay = current.isDay,
                 locationName = location.name,
                 conditionLabel = current.condition.label,
+                windKmh = current.windSpeedKmh,
                 updatedAtMillis = System.currentTimeMillis()
             )
         )

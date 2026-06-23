@@ -36,7 +36,8 @@ import kotlin.random.Random
 fun WeatherSceneView(
     scene: WeatherScene,
     isDay: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    windKmh: Double = 0.0
 ) {
     val transition = rememberInfiniteTransition(label = "weather")
 
@@ -77,6 +78,21 @@ fun WeatherSceneView(
         List(60) { listOf(rng.nextFloat(), rng.nextFloat(), 0.5f + rng.nextFloat(), 0.5f + rng.nextFloat()) }
     }
     val starSeeds = remember(scene, isDay) { List(46) { Triple(rng.nextFloat(), rng.nextFloat(), rng.nextFloat()) } }
+    // wind streaks: y, phase, length, speed
+    val windSeeds = remember(scene, isDay) {
+        List(9) { listOf(0.12f + rng.nextFloat() * 0.7f, rng.nextFloat(), 0.5f + rng.nextFloat() * 0.5f, 0.7f + rng.nextFloat() * 0.6f) }
+    }
+    // leaves: y, phase, spin, size, speed
+    val leafSeeds = remember(scene, isDay) {
+        List(6) { listOf(0.15f + rng.nextFloat() * 0.7f, rng.nextFloat(), rng.nextFloat(), 0.6f + rng.nextFloat() * 0.8f, 0.7f + rng.nextFloat() * 0.6f) }
+    }
+    // mist blobs (fog): x, y, phase, size
+    val mistSeeds = remember(scene, isDay) {
+        List(16) { listOf(rng.nextFloat(), 0.25f + rng.nextFloat() * 0.6f, rng.nextFloat(), 0.6f + rng.nextFloat() * 0.8f) }
+    }
+
+    // Wind only animates when it's actually breezy.
+    val windFactor = ((windKmh - 18.0) / 40.0).coerceIn(0.0, 1.0).toFloat()
 
     Canvas(modifier = modifier) {
         when (scene) {
@@ -98,6 +114,7 @@ fun WeatherSceneView(
             WeatherScene.FOG -> {
                 drawCloud(slow, Offset(size.width * 0.5f, size.height * 0.34f), 1.0f, Color(0xFFDDE3EA), pulse)
                 drawFog(slow)
+                drawMist(mistSeeds, t)
             }
             WeatherScene.RAIN -> {
                 drawCloud(slow, Offset(size.width * 0.5f, size.height * 0.32f), 1.15f, Color(0xFFB9C2CC), pulse, depth = true)
@@ -114,6 +131,12 @@ fun WeatherSceneView(
                 drawSplashes(splashSeeds, t)
                 drawLightning(flash)
             }
+        }
+
+        // Wind streaks + tumbling leaves overlay any scene when it's breezy.
+        if (windFactor > 0f) {
+            drawWind(windSeeds, t, windFactor)
+            drawLeaves(leafSeeds, t, windFactor)
         }
     }
 }
@@ -377,6 +400,69 @@ private fun DrawScope.drawLightning(flash: Float) {
     drawPath(main, glow)
     // Bright core.
     drawPath(main, Color.White.copy(alpha = intensity * 0.6f), style = Stroke(width = size.minDimension * 0.01f))
+}
+
+private fun DrawScope.drawWind(seeds: List<List<Float>>, t: Float, factor: Float) {
+    val count = (3 + (seeds.size - 3) * factor).toInt().coerceIn(3, seeds.size)
+    for (i in 0 until count) {
+        val s = seeds[i]
+        val y = s[0] * size.height
+        val phase = s[1]; val lenF = s[2]; val speed = s[3]
+        val travel = (t * (0.6f + speed) * (0.6f + factor) + phase) % 1.25f - 0.15f
+        val x = travel * size.width
+        val len = size.width * (0.16f + 0.14f * lenF)
+        val dip = size.height * 0.02f
+        val path = Path().apply {
+            moveTo(x, y)
+            quadraticBezierTo(x + len * 0.5f, y - dip, x + len, y)
+        }
+        drawPath(
+            path,
+            Color.White.copy(alpha = (0.10f + 0.16f * lenF) * factor),
+            style = Stroke(width = size.minDimension * 0.01f, cap = StrokeCap.Round)
+        )
+    }
+}
+
+private fun DrawScope.drawLeaves(seeds: List<List<Float>>, t: Float, factor: Float) {
+    val count = (1 + (seeds.size - 1) * factor).toInt().coerceIn(1, seeds.size)
+    for (i in 0 until count) {
+        val s = seeds[i]
+        val baseY = s[0]; val phase = s[1]; val spin = s[2]; val sizeF = s[3]; val speed = s[4]
+        val prog = (t * (0.7f + speed) * (0.7f + factor) + phase) % 1.3f - 0.15f
+        val x = prog * size.width
+        val y = baseY * size.height + sin((prog + phase) * 4 * PI).toFloat() * size.height * 0.06f
+        val r = size.minDimension * 0.018f * sizeF
+        rotate(degrees = (t * 360f * (1f + spin) + phase * 360f), pivot = Offset(x, y)) {
+            val leaf = Path().apply {
+                moveTo(x, y - r)
+                quadraticBezierTo(x + r, y, x, y + r)
+                quadraticBezierTo(x - r, y, x, y - r)
+                close()
+            }
+            // Autumn-ish tones.
+            val col = if (i % 2 == 0) Color(0xFFC98A3C) else Color(0xFF8FA869)
+            drawPath(leaf, col.copy(alpha = 0.75f * factor))
+        }
+    }
+}
+
+private fun DrawScope.drawMist(seeds: List<List<Float>>, t: Float) {
+    seeds.forEach { s ->
+        val x0 = s[0]; val y0 = s[1]; val phase = s[2]; val sizeF = s[3]
+        val drift = ((t * (0.3f + sizeF * 0.3f) + phase) % 1.2f - 0.1f)
+        val x = drift * size.width
+        val y = y0 * size.height + sin((t + phase) * 2 * PI).toFloat() * size.height * 0.015f
+        val r = size.minDimension * (0.12f + 0.10f * sizeF)
+        drawCircle(
+            brush = Brush.radialGradient(
+                colorStops = arrayOf(0f to Color.White.copy(alpha = 0.12f), 1f to Color.White.copy(alpha = 0f)),
+                center = Offset(x, y), radius = r
+            ),
+            radius = r,
+            center = Offset(x, y)
+        )
+    }
 }
 
 // ---- small colour helpers ----
