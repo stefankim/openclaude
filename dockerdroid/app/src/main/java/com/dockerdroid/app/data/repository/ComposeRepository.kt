@@ -23,11 +23,13 @@ import kotlinx.coroutines.flow.Flow
  * stack can be torn down together.
  */
 class ComposeRepository(
-    private val api: DockerApiClient,
+    private val apiProvider: () -> DockerApiClient,
     private val parser: ComposeParser,
     private val projectDao: ComposeProjectDao,
     private val containerDao: DeployedContainerDao,
 ) {
+    private val api: DockerApiClient get() = apiProvider()
+
     fun observeProjects(): Flow<List<ComposeProjectEntity>> = projectDao.observeAll()
 
     suspend fun import(name: String, yaml: String): Long {

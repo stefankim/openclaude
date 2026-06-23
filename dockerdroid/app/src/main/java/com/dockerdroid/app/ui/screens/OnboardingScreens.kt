@@ -20,6 +20,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,7 +36,7 @@ import com.dockerdroid.app.core.install.InstallProgress
 import com.dockerdroid.app.ui.viewmodel.InstallViewModel
 
 @Composable
-fun WelcomeScreen(onContinue: () -> Unit) {
+fun WelcomeScreen(onContinue: () -> Unit, onConnectRemote: () -> Unit = {}) {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center,
@@ -44,11 +45,14 @@ fun WelcomeScreen(onContinue: () -> Unit) {
         Text("DockerDroid", style = MaterialTheme.typography.displaySmall)
         Spacer(Modifier.size(8.dp))
         Text(
-            "Run a full Docker Engine on your rooted Android device — no Termux commands required.",
+            "Run a full Docker Engine on your rooted Android device — or connect to a " +
+                "remote Docker host over SSH (no root required).",
             style = MaterialTheme.typography.bodyLarge,
         )
         Spacer(Modifier.size(32.dp))
-        Button(onClick = onContinue) { Text("Get started") }
+        Button(onClick = onContinue) { Text("Set up on this device (root)") }
+        Spacer(Modifier.size(12.dp))
+        OutlinedButton(onClick = onConnectRemote) { Text("Connect to a remote host (SSH)") }
     }
 }
 

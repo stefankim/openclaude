@@ -24,19 +24,30 @@ import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
  * Thin, coroutine-friendly client for the Docker Engine REST API, scoped to the
- * operations the UI needs. All calls go over the unix socket via [UnixSocketFactory].
+ * operations the UI needs.
  *
- * The base host (`http://localhost`) is a placeholder — routing is handled by the
- * socket factory, not DNS.
+ * The transport is supplied as an [OkHttpClient]: [local] routes over the on-device
+ * unix socket via [UnixSocketFactory], while [remote] is given a client that tunnels
+ * to a remote daemon (e.g. over SSH). The base host (`http://localhost`) is a
+ * placeholder — routing is handled by the client's socket factory, not DNS.
  */
-class DockerApiClient(
-    socketPath: String = Paths.SOCKET,
+class DockerApiClient private constructor(
+    private val client: OkHttpClient,
     private val apiVersion: String = "v1.45",
 ) {
-    private val client: OkHttpClient = UnixSocketFactory.clientFor(socketPath)
     private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
     private val base = "http://localhost/$apiVersion"
     private val jsonMedia = "application/json".toMediaType()
+
+    companion object {
+        /** Client for the daemon running on this device. */
+        fun local(socketPath: String = Paths.SOCKET, apiVersion: String = "v1.45") =
+            DockerApiClient(UnixSocketFactory.clientFor(socketPath), apiVersion)
+
+        /** Client for a remote daemon, given a transport-configured [OkHttpClient]. */
+        fun remote(client: OkHttpClient, apiVersion: String = "v1.45") =
+            DockerApiClient(client, apiVersion)
+    }
 
     // ---- Images -----------------------------------------------------------
 

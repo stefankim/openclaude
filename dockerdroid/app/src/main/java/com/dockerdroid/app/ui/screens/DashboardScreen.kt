@@ -19,19 +19,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.dockerdroid.app.core.service.DaemonState
+import com.dockerdroid.app.data.remote.Connection
 import com.dockerdroid.app.ui.viewmodel.DashboardViewModel
 
 @Composable
 fun DashboardScreen(viewModel: DashboardViewModel) {
     val daemon by viewModel.daemonState.collectAsState()
     val counts by viewModel.counts.collectAsState()
+    val connection by viewModel.connection.collectAsState()
 
-    LaunchedEffect(daemon) {
-        if (daemon is DaemonState.Running) viewModel.refresh()
+    LaunchedEffect(daemon, connection) {
+        if (connection is Connection.Remote || daemon is DaemonState.Running) viewModel.refresh()
     }
 
     Column(Modifier.fillMaxWidth().padding(16.dp)) {
-        DaemonCard(daemon, onStart = viewModel::startDaemon, onStop = viewModel::stopDaemon)
+        when (val c = connection) {
+            is Connection.Remote -> RemoteCard(c.host.label)
+            Connection.Local -> DaemonCard(daemon, onStart = viewModel::startDaemon, onStop = viewModel::stopDaemon)
+        }
         Spacer(Modifier.size(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatCard("Containers", "${counts.running}/${counts.containers}", Modifier.weight(1f))
@@ -58,6 +63,16 @@ private fun DaemonCard(state: DaemonState, onStart: () -> Unit, onStop: () -> Un
             } else {
                 Button(onClick = onStart) { Text("Start") }
             }
+        }
+    }
+}
+
+@Composable
+private fun RemoteCard(label: String) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Text("Remote Docker host", style = MaterialTheme.typography.titleMedium)
+            Text("Connected to $label", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

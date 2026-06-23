@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dockerdroid.app.AppContainer
 import com.dockerdroid.app.core.service.DaemonState
+import com.dockerdroid.app.data.remote.Connection
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,6 +15,9 @@ class DashboardViewModel(private val container: AppContainer) : ViewModel() {
     data class Counts(val containers: Int = 0, val running: Int = 0, val images: Int = 0)
 
     val daemonState: StateFlow<DaemonState> = container.serviceManager.state
+
+    /** Local-daemon controls only apply when not connected to a remote host. */
+    val connection: StateFlow<Connection> = container.connectionManager.connection
 
     private val _counts = MutableStateFlow(Counts())
     val counts: StateFlow<Counts> = _counts.asStateFlow()

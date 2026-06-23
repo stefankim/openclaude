@@ -100,6 +100,10 @@ dependencies {
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
 
+    // Remote hosts: SSH transport + encrypted credential storage
+    implementation(libs.jsch)
+    implementation(libs.androidx.security.crypto)
+
     implementation(libs.kotlinx.coroutines.android)
 
     // Unit tests

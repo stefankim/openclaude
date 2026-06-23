@@ -15,6 +15,8 @@ libsu = "5.2.2"
 okhttp = "4.12.0"
 moshi = "1.15.1"
 coroutines = "1.8.1"
+jsch = "0.2.18"
+securityCrypto = "1.1.0-alpha06"
 junit = "4.13.2"
 androidxJunit = "1.2.1"
 espresso = "3.6.1"
@@ -48,6 +50,8 @@ libsu-io = { group = "com.github.topjohnwu.libsu", name = "io", version.ref = "l
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 moshi = { group = "com.squareup.moshi", name = "moshi", version.ref = "moshi" }
 moshi-kotlin = { group = "com.squareup.moshi", name = "moshi-kotlin", version.ref = "moshi" }
+jsch = { group = "com.github.mwiede", name = "jsch", version.ref = "jsch" }
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }

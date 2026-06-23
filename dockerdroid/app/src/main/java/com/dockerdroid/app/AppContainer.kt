@@ -8,6 +8,7 @@ import com.dockerdroid.app.core.service.DockerServiceManager
 import com.dockerdroid.app.core.shell.RootShellManager
 import com.dockerdroid.app.data.api.DockerApiClient
 import com.dockerdroid.app.data.db.AppDatabase
+import com.dockerdroid.app.data.remote.ConnectionManager
 import com.dockerdroid.app.data.repository.ComposeRepository
 import com.dockerdroid.app.data.repository.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
@@ -22,9 +23,14 @@ class AppContainer(context: Context) {
     private val appScope = CoroutineScope(SupervisorJob())
 
     val shell: RootShellManager by lazy { RootShellManager() }
-    val api: DockerApiClient by lazy { DockerApiClient() }
     val database: AppDatabase by lazy { AppDatabase.get(context) }
     val composeParser: ComposeParser by lazy { ComposeParser() }
+
+    /** Owns whether we talk to the on-device daemon or a remote SSH host. */
+    val connectionManager: ConnectionManager by lazy { ConnectionManager(context) }
+
+    /** The active Docker client; tracks the current connection (local or remote). */
+    val api: DockerApiClient get() = connectionManager.client
 
     val compatibilityChecker: CompatibilityChecker by lazy { CompatibilityChecker(shell) }
 
@@ -40,7 +46,8 @@ class AppContainer(context: Context) {
 
     val composeRepository: ComposeRepository by lazy {
         ComposeRepository(
-            api = api,
+            // Provider, not a captured instance, so deploys follow the active connection.
+            apiProvider = { connectionManager.client },
             parser = composeParser,
             projectDao = database.composeProjectDao(),
             containerDao = database.deployedContainerDao(),

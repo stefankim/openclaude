@@ -71,6 +71,9 @@ wireframes: [docs/WIREFRAMES.md](docs/WIREFRAMES.md).
   Drupal, Portainer.
 - **Embedded terminal** — streamed root shell with Docker CLI access.
 - **Monitoring** — per-container CPU / RAM / network, refreshed live.
+- **Remote hosts (SSH)** — manage a Docker Engine on another machine (e.g. Docker
+  Desktop on a Mac) with **no phone root**; works on locked devices. See
+  [docs/REMOTE.md](docs/REMOTE.md).
 - **Auto start on boot** — opt-in `BOOT_COMPLETED` receiver.
 - **Security** — root prompted only when needed, no stored credentials, downloaded
   binaries SHA-256 verified, app data sandboxed.
