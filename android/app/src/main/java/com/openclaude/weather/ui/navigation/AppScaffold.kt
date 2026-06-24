@@ -68,6 +68,7 @@ fun AppScaffold(
     val selected by weatherVm.selected.collectAsState()
     val forecastState by weatherVm.forecast.collectAsState()
     val search by weatherVm.search.collectAsState()
+    val model by weatherVm.model.collectAsState()
     val radarState by radarVm.state.collectAsState()
     val radarForecast by radarVm.forecast.collectAsState()
 
@@ -137,7 +138,9 @@ fun AppScaffold(
                             }
                         },
                         onSelect = { weatherVm.select(it); tab = Tab.TODAY },
-                        onRemove = weatherVm::remove
+                        onRemove = weatherVm::remove,
+                        model = model,
+                        onSetModel = weatherVm::setModel
                     )
 
                     Tab.RADAR -> RadarScreen(

@@ -22,19 +22,23 @@ class WeatherRepository {
     private val cache = mutableMapOf<String, Forecast>()
     private val cacheTtlMillis = 10 * 60 * 1000L
 
-    suspend fun forecast(location: SavedLocation, forceRefresh: Boolean = false): Forecast =
-        withContext(Dispatchers.IO) {
-            val cached = cache[location.id]
-            if (!forceRefresh && cached != null &&
-                System.currentTimeMillis() - cached.fetchedAtMillis < cacheTtlMillis
-            ) {
-                return@withContext cached
-            }
-            val dto = weatherApi.forecast(location.latitude, location.longitude)
-            val mapped = mapForecast(dto)
-            cache[location.id] = mapped
-            mapped
+    suspend fun forecast(
+        location: SavedLocation,
+        forceRefresh: Boolean = false,
+        model: String = "best_match"
+    ): Forecast = withContext(Dispatchers.IO) {
+        val key = "${location.id}|$model"
+        val cached = cache[key]
+        if (!forceRefresh && cached != null &&
+            System.currentTimeMillis() - cached.fetchedAtMillis < cacheTtlMillis
+        ) {
+            return@withContext cached
         }
+        val dto = weatherApi.forecast(location.latitude, location.longitude, models = model)
+        val mapped = mapForecast(dto)
+        cache[key] = mapped
+        mapped
+    }
 
     suspend fun search(query: String): List<GeoResult> = withContext(Dispatchers.IO) {
         if (query.isBlank()) emptyList()

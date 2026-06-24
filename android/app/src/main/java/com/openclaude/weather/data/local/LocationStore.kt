@@ -21,12 +21,20 @@ class LocationStore(private val context: Context) {
 
     private val keyLocations = stringPreferencesKey("locations_json")
     private val keySelected = stringPreferencesKey("selected_id")
+    private val keyModel = stringPreferencesKey("forecast_model")
 
     val locations: Flow<List<SavedLocation>> = context.dataStore.data.map { prefs ->
         prefs[keyLocations]?.let { runCatching { adapter.fromJson(it) }.getOrNull() } ?: emptyList()
     }
 
     val selectedId: Flow<String?> = context.dataStore.data.map { it[keySelected] }
+
+    /** Selected Open-Meteo forecast model id (default "best_match"). */
+    val model: Flow<String> = context.dataStore.data.map { it[keyModel] ?: "best_match" }
+
+    suspend fun setModel(model: String) {
+        context.dataStore.edit { it[keyModel] = model }
+    }
 
     suspend fun current(): List<SavedLocation> {
         var result: List<SavedLocation> = emptyList()

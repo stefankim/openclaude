@@ -148,7 +148,10 @@ fun TodayScreen(location: SavedLocation, forecast: Forecast) {
                     "${Format.wind(current.windSpeedKmh)} ${WeatherCode.windDirectionLabel(current.windDirectionDeg)}"
                 )
                 QuickStat(Icons.Filled.WaterDrop, "Humidity", Format.percent(current.humidityPct))
-                QuickStat(Icons.Filled.WbSunny, "UV", "${Math.round(current.uvIndex)}")
+                QuickStat(
+                    Icons.Filled.WbSunny, "UV",
+                    if (current.uvIndex >= 0.5) "${Math.round(current.uvIndex)}" else "—"
+                )
             }
         }
 

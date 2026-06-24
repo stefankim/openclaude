@@ -49,7 +49,9 @@ fun LocationsScreen(
     onQueryChange: (String) -> Unit,
     onAdd: (GeoResult) -> Unit,
     onSelect: (String) -> Unit,
-    onRemove: (String) -> Unit
+    onRemove: (String) -> Unit,
+    model: String,
+    onSetModel: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
 
@@ -102,7 +104,10 @@ fun LocationsScreen(
                     modifier = Modifier.padding(8.dp)
                 )
             }
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f, fill = false)
+            ) {
                 items(locations, key = { it.id }) { loc ->
                     SavedRow(
                         location = loc,
@@ -112,6 +117,44 @@ fun LocationsScreen(
                     )
                 }
             }
+
+            Spacer(Modifier.height(16.dp))
+            ModelPicker(model = model, onSetModel = onSetModel)
+        }
+    }
+}
+
+private val MODELS = listOf(
+    "best_match" to "Auto",
+    "ecmwf_ifs025" to "ECMWF",
+    "icon_seamless" to "ICON",
+    "gfs_seamless" to "GFS"
+)
+
+@Composable
+private fun ModelPicker(model: String, onSetModel: (String) -> Unit) {
+    SectionTitle("Forecast model")
+    Text(
+        "Different models forecast slightly different temperatures, especially days ahead. " +
+            "Auto picks the best regional model (with UV); others let you compare.",
+        color = Color.White.copy(alpha = 0.65f),
+        fontSize = 11.sp,
+        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        MODELS.forEach { (id, label) ->
+            val selected = id == model
+            Text(
+                text = label,
+                color = if (selected) Color(0xFF0F172A) else Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(if (selected) Color.White else Color.White.copy(alpha = 0.14f))
+                    .clickable { onSetModel(id) }
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+            )
         }
     }
 }

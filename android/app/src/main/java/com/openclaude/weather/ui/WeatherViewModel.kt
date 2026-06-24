@@ -49,15 +49,19 @@ class WeatherViewModel(
     private val _search = MutableStateFlow(SearchState())
     val search: StateFlow<SearchState> = _search.asStateFlow()
 
-    private var lastLoadedId: String? = null
+    val model: StateFlow<String> =
+        store.model.stateIn(viewModelScope, SharingStarted.Eagerly, "best_match")
+
+    private var lastLoadedKey: String? = null
 
     init {
-        // Auto-load forecast whenever the selected location changes.
+        // Auto-load forecast whenever the selected location or model changes.
         viewModelScope.launch {
-            selected.collect { loc ->
-                if (loc != null && loc.id != lastLoadedId) {
-                    lastLoadedId = loc.id
-                    load(loc, force = false)
+            combine(selected, store.model) { loc, m -> loc to m }.collect { (loc, m) ->
+                val key = loc?.let { "${it.id}|$m" }
+                if (loc != null && key != lastLoadedKey) {
+                    lastLoadedKey = key
+                    load(loc, force = false, model = m)
                 }
             }
         }
@@ -65,13 +69,15 @@ class WeatherViewModel(
 
     fun select(id: String) = viewModelScope.launch { store.select(id) }
 
+    fun setModel(model: String) = viewModelScope.launch { store.setModel(model) }
+
     fun refresh() = viewModelScope.launch {
-        selected.value?.let { load(it, force = true) }
+        selected.value?.let { load(it, force = true, model = model.value) }
     }
 
-    private fun load(location: SavedLocation, force: Boolean) = viewModelScope.launch {
+    private fun load(location: SavedLocation, force: Boolean, model: String) = viewModelScope.launch {
         _forecast.value = ForecastState.Loading
-        runCatching { repository.forecast(location, force) }
+        runCatching { repository.forecast(location, force, model) }
             .onSuccess { _forecast.value = ForecastState.Success(it) }
             .onFailure {
                 _forecast.value = ForecastState.Error(it.message ?: "Could not load weather")

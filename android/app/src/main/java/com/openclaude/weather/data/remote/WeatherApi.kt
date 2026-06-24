@@ -23,7 +23,8 @@ interface OpenMeteoApi {
             "temperature_2m,weather_code,precipitation_probability,wind_speed_10m,is_day",
         @Query("daily") daily: String =
             "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max," +
-                "precipitation_sum,precipitation_probability_max,wind_speed_10m_max"
+                "precipitation_sum,precipitation_probability_max,wind_speed_10m_max",
+        @Query("models") models: String = "best_match"
     ): ForecastResponse
 
     /**
