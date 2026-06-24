@@ -1,0 +1,65 @@
+name: DockerDroid Release
+
+# Publishes a permanent, downloadable APK as a GitHub Release asset whenever a
+# tag like `dockerdroid-v0.1.0` is pushed. The asset name is stable, so the
+# download URL is predictable:
+#   https://github.com/<owner>/<repo>/releases/download/<tag>/dockerdroid-debug.apk
+on:
+  push:
+    tags: ["dockerdroid-v*"]
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: dockerdroid
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install required SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Generate Gradle wrapper if missing
+        run: |
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            gradle wrapper --gradle-version 8.10
+          fi
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Stage APK with a stable name
+        run: cp app/build/outputs/apk/debug/app-debug.apk dockerdroid-debug.apk
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: DockerDroid ${{ github.ref_name }}
+          body: |
+            DockerDroid debug APK (arm64-v8a, Android 12+).
+
+            Modes: on-device root daemon, SSH remote host, and on-device QEMU VM
+            (engine wired; native QEMU payload built separately — see docs/VM.md).
+
+            Install: download `dockerdroid-debug.apk`, allow "unknown apps", and if
+            Play Protect warns choose "Install anyway". A rooted device is only
+            needed for the local-daemon mode; SSH/VM modes need no root.
+          files: dockerdroid/dockerdroid-debug.apk
