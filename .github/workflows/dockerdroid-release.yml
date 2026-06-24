@@ -7,6 +7,11 @@ name: DockerDroid Release
 on:
   push:
     tags: ["dockerdroid-v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag to create (e.g. dockerdroid-v0.1.0)"
+        default: "dockerdroid-v0.1.0"
 
 permissions:
   contents: write
@@ -51,8 +56,10 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: DockerDroid ${{ github.ref_name }}
+          # On tag push, github.ref_name is the tag. On manual dispatch, use the
+          # input — action-gh-release creates the tag at this commit if it's new.
+          tag_name: ${{ github.event.inputs.version || github.ref_name }}
+          name: DockerDroid ${{ github.event.inputs.version || github.ref_name }}
           body: |
             DockerDroid debug APK (arm64-v8a, Android 12+).
 
