@@ -1,12 +1,18 @@
 name: DockerDroid Release
 
-# Publishes a permanent, downloadable APK as a GitHub Release asset whenever a
-# tag like `dockerdroid-v0.1.0` is pushed. The asset name is stable, so the
-# download URL is predictable:
+# Publishes a permanent, downloadable APK as a GitHub Release asset under a stable
+# name, so the download URL is predictable:
 #   https://github.com/<owner>/<repo>/releases/download/<tag>/dockerdroid-debug.apk
+#
+# Triggers:
+#   - push a tag `dockerdroid-v*`                → release tagged with that version
+#   - manual workflow_dispatch (version input)   → release tagged with the input
+#   - push to the dev branch with `[release]` in the commit message
+#                                                → rolling `dockerdroid-latest` release
 on:
   push:
     tags: ["dockerdroid-v*"]
+    branches: ["claude/dockerdroid-android-app-6ug06a"]
   workflow_dispatch:
     inputs:
       version:
@@ -22,6 +28,12 @@ defaults:
 
 jobs:
   release:
+    # On branch pushes, only publish when the commit opts in with [release]; tag
+    # pushes and manual dispatch always publish.
+    if: >-
+      github.event_name != 'push' ||
+      startsWith(github.ref, 'refs/tags/') ||
+      contains(github.event.head_commit.message, '[release]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,13 +65,27 @@ jobs:
       - name: Stage APK with a stable name
         run: cp app/build/outputs/apk/debug/app-debug.apk dockerdroid-debug.apk
 
+      - name: Resolve release tag
+        id: meta
+        working-directory: ${{ github.workspace }}
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+            echo "pre=false" >> "$GITHUB_OUTPUT"
+          elif [ "${{ startsWith(github.ref, 'refs/tags/') }}" = "true" ]; then
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "pre=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=dockerdroid-latest" >> "$GITHUB_OUTPUT"
+            echo "pre=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          # On tag push, github.ref_name is the tag. On manual dispatch, use the
-          # input — action-gh-release creates the tag at this commit if it's new.
-          tag_name: ${{ github.event.inputs.version || github.ref_name }}
-          name: DockerDroid ${{ github.event.inputs.version || github.ref_name }}
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: DockerDroid ${{ steps.meta.outputs.tag }}
+          prerelease: ${{ steps.meta.outputs.pre }}
           body: |
             DockerDroid debug APK (arm64-v8a, Android 12+).
 
@@ -67,6 +93,6 @@ jobs:
             (engine wired; native QEMU payload built separately — see docs/VM.md).
 
             Install: download `dockerdroid-debug.apk`, allow "unknown apps", and if
-            Play Protect warns choose "Install anyway". A rooted device is only
-            needed for the local-daemon mode; SSH/VM modes need no root.
+            Play Protect warns choose "Install anyway". Root is only needed for the
+            local-daemon mode; the SSH and VM modes need no root.
           files: dockerdroid/dockerdroid-debug.apk
