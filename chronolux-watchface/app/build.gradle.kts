@@ -1,6 +1,9 @@
+import java.util.Properties
+
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.detekt)
 }
 
 android {
@@ -15,6 +18,25 @@ android {
         versionName = "1.0.0"
     }
 
+    // Release signing is read from keystore.properties when present (kept out
+    // of version control). Without it, the release variant builds unsigned.
+    val keystorePropertiesFile = rootProject.file("keystore.properties")
+    val keystoreProperties = Properties()
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(keystorePropertiesFile.inputStream())
+    }
+
+    signingConfigs {
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -23,6 +45,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
@@ -40,29 +65,31 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
+        kotlinCompilerExtensionVersion = libs.versions.composeCompiler.get()
     }
 }
 
 dependencies {
     // Watch Face APIs
-    implementation("androidx.wear.watchface:watchface:1.2.1")
-    implementation("androidx.wear.watchface:watchface-complications-data-source:1.2.1")
-    implementation("androidx.wear.watchface:watchface-complications-rendering:1.2.1")
-    implementation("androidx.wear.watchface:watchface-editor:1.2.1")
+    implementation(libs.watchface)
+    implementation(libs.watchface.complications.data.source)
+    implementation(libs.watchface.complications.rendering)
+    implementation(libs.watchface.editor)
 
     // Compose for Wear OS (configuration editor UI)
-    implementation(platform("androidx.compose:compose-bom:2024.05.00"))
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.foundation:foundation")
-    implementation("androidx.wear.compose:compose-material:1.3.1")
-    implementation("androidx.wear.compose:compose-foundation:1.3.1")
-    implementation("androidx.activity:activity-compose:1.9.0")
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.foundation)
+    implementation(libs.wear.compose.material)
+    implementation(libs.wear.compose.foundation)
+    implementation(libs.activity.compose)
 
     // Lifecycle + coroutines
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation(libs.lifecycle.viewmodel)
+    implementation(libs.lifecycle.runtime)
+    implementation(libs.coroutines.android)
 
-    implementation("androidx.core:core-ktx:1.13.1")
+    implementation(libs.core.ktx)
+
+    testImplementation(libs.junit)
 }

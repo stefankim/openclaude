@@ -1,0 +1,34 @@
+# Detekt configuration for ChronoLux. Builds on detekt's defaults; the rules
+# below are tuned for a canvas watch face (lots of geometry literals) and
+# Compose UI code.
+
+build:
+  maxIssues: 0
+
+complexity:
+  LongMethod:
+    active: false
+  LongParameterList:
+    active: false
+  CyclomaticComplexMethod:
+    active: false
+  NestedBlockDepth:
+    active: false
+  TooManyFunctions:
+    active: false
+
+style:
+  MagicNumber:
+    # Geometry/typography literals are inherent to a canvas renderer.
+    active: false
+  UnusedPrivateMember:
+    active: true
+  ReturnCount:
+    active: false
+  MaxLineLength:
+    maxLineLength: 120
+
+naming:
+  FunctionNaming:
+    # Composable functions are PascalCase by convention.
+    ignoreAnnotated: ['Composable']

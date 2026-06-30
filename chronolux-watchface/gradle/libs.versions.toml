@@ -1,0 +1,38 @@
+[versions]
+agp = "8.5.2"
+kotlin = "1.9.24"
+composeBom = "2024.05.00"
+composeCompiler = "1.5.14"
+wearCompose = "1.3.1"
+watchface = "1.2.1"
+activityCompose = "1.9.0"
+lifecycle = "2.8.0"
+coroutines = "1.8.1"
+coreKtx = "1.13.1"
+detekt = "1.23.6"
+junit = "4.13.2"
+
+[libraries]
+watchface = { module = "androidx.wear.watchface:watchface", version.ref = "watchface" }
+watchface-complications-data-source = { module = "androidx.wear.watchface:watchface-complications-data-source", version.ref = "watchface" }
+watchface-complications-rendering = { module = "androidx.wear.watchface:watchface-complications-rendering", version.ref = "watchface" }
+watchface-editor = { module = "androidx.wear.watchface:watchface-editor", version.ref = "watchface" }
+
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-foundation = { module = "androidx.compose.foundation:foundation" }
+wear-compose-material = { module = "androidx.wear.compose:compose-material", version.ref = "wearCompose" }
+wear-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "wearCompose" }
+activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+
+lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+lifecycle-runtime = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+
+junit = { module = "junit:junit", version.ref = "junit" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

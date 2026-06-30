@@ -17,9 +17,12 @@ import androidx.wear.watchface.WatchState
 import androidx.wear.watchface.style.CurrentUserStyleRepository
 import androidx.wear.watchface.style.UserStyle
 import androidx.wear.watchface.style.UserStyleSetting
+import com.chronolux.watchface.style.AccentColor
 import com.chronolux.watchface.style.ColorTheme
+import com.chronolux.watchface.style.DateFormat
 import com.chronolux.watchface.style.LayoutMode
 import com.chronolux.watchface.style.StyleIds
+import com.chronolux.watchface.style.TimeFormat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -42,7 +45,7 @@ private const val TWO_PI = 2.0 * Math.PI
 class ChronoLuxRenderer(
     private val context: Context,
     surfaceHolder: SurfaceHolder,
-    watchState: WatchState,
+    private val watchState: WatchState,
     private val complicationSlotsManager: ComplicationSlotsManager,
     currentUserStyleRepository: CurrentUserStyleRepository
 ) : Renderer.CanvasRenderer2<ChronoLuxRenderer.ChronoLuxSharedAssets>(
@@ -61,8 +64,16 @@ class ChronoLuxRenderer(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private var theme = ColorTheme.MIDNIGHT_GOLD
+    private var accentColor = AccentColor.DEFAULT
     private var layoutMode = LayoutMode.HYBRID
+    private var timeFormat = TimeFormat.H24
+    private var dateFormat = DateFormat.WEEKDAY
     private var showTicks = true
+    private var showSeconds = true
+
+    /** Accent actually painted: the override swatch if set, else the theme's. */
+    private val effectiveAccent: Int
+        get() = accentColor.colorOverride ?: theme.accent
 
     private var backgroundShader: RadialGradient? = null
     private var lastShaderSize = -1
@@ -104,8 +115,8 @@ class ChronoLuxRenderer(
         typeface = Typeface.SANS_SERIF
     }
 
-    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
-    private val dateFormatter = DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
+    private var timeFormatter = DateTimeFormatter.ofPattern(timeFormat.pattern, Locale.getDefault())
+    private var dateFormatter = DateTimeFormatter.ofPattern(dateFormat.pattern, Locale.getDefault())
 
     init {
         scope.launch {
@@ -119,24 +130,35 @@ class ChronoLuxRenderer(
             when (setting.id.value) {
                 StyleIds.COLOR_THEME ->
                     theme = ColorTheme.fromId(option.id.toString())
+                StyleIds.ACCENT_COLOR ->
+                    accentColor = AccentColor.fromId(option.id.toString())
                 StyleIds.LAYOUT_MODE ->
                     layoutMode = LayoutMode.fromId(option.id.toString())
+                StyleIds.TIME_FORMAT ->
+                    timeFormat = TimeFormat.fromId(option.id.toString())
+                StyleIds.DATE_FORMAT ->
+                    dateFormat = DateFormat.fromId(option.id.toString())
                 StyleIds.SHOW_TICKS ->
                     showTicks = (option as UserStyleSetting.BooleanUserStyleSetting.BooleanOption).value
+                StyleIds.SHOW_SECONDS ->
+                    showSeconds = (option as UserStyleSetting.BooleanUserStyleSetting.BooleanOption).value
             }
         }
+        timeFormatter = DateTimeFormatter.ofPattern(timeFormat.pattern, Locale.getDefault())
+        dateFormatter = DateTimeFormatter.ofPattern(dateFormat.pattern, Locale.getDefault())
         // Force the gradient to rebuild with the new palette on next frame.
         lastShaderSize = -1
         updatePaints()
     }
 
     private fun updatePaints() {
-        hourHandPaint.color = theme.accent
-        minuteHandPaint.color = theme.accent
+        val accent = effectiveAccent
+        hourHandPaint.color = accent
+        minuteHandPaint.color = accent
         secondHandPaint.color = theme.secondary
         tickPaint.color = theme.secondary
-        centerDotPaint.color = theme.accent
-        digitalPaint.color = theme.accent
+        centerDotPaint.color = accent
+        digitalPaint.color = accent
         datePaint.color = theme.secondary
     }
 
@@ -149,19 +171,24 @@ class ChronoLuxRenderer(
         sharedAssets: ChronoLuxSharedAssets
     ) {
         val isAmbient = renderParameters.drawMode == DrawMode.AMBIENT
+        // Auto battery-saver: when the watch reports a low, non-charging
+        // battery we drop the power-hungry sweeping second hand and the
+        // radial gradient. isBatteryLowAndNotCharging may be null early on.
+        val batterySaver = !isAmbient && watchState.isBatteryLowAndNotCharging.value == true
+        val drawSecondHand = showSeconds && !isAmbient && !batterySaver
 
-        drawBackground(canvas, bounds, isAmbient)
+        drawBackground(canvas, bounds, isAmbient, batterySaver)
 
         if (showTicks && !isAmbient) {
             drawTicks(canvas, bounds)
         }
 
         when (layoutMode) {
-            LayoutMode.ANALOG -> drawAnalog(canvas, bounds, zonedDateTime, isAmbient)
+            LayoutMode.ANALOG -> drawAnalog(canvas, bounds, zonedDateTime, isAmbient, drawSecondHand)
             LayoutMode.DIGITAL -> drawDigital(canvas, bounds, zonedDateTime, isAmbient, centered = true)
             LayoutMode.HYBRID -> {
                 drawDigital(canvas, bounds, zonedDateTime, isAmbient, centered = false)
-                drawAnalog(canvas, bounds, zonedDateTime, isAmbient)
+                drawAnalog(canvas, bounds, zonedDateTime, isAmbient, drawSecondHand)
             }
         }
 
@@ -188,10 +215,15 @@ class ChronoLuxRenderer(
         }
     }
 
-    private fun drawBackground(canvas: Canvas, bounds: Rect, isAmbient: Boolean) {
+    private fun drawBackground(canvas: Canvas, bounds: Rect, isAmbient: Boolean, batterySaver: Boolean) {
         if (isAmbient) {
             // Pure black in ambient mode: saves power on AMOLED and avoids burn-in.
             canvas.drawColor(Color.BLACK)
+            return
+        }
+        if (batterySaver) {
+            // Flat fill instead of a per-frame radial gradient to save power.
+            canvas.drawColor(theme.backgroundOuter)
             return
         }
         if (lastShaderSize != bounds.width()) {
@@ -237,7 +269,8 @@ class ChronoLuxRenderer(
         canvas: Canvas,
         bounds: Rect,
         time: ZonedDateTime,
-        isAmbient: Boolean
+        isAmbient: Boolean,
+        drawSecondHand: Boolean
     ) {
         val centerX = bounds.exactCenterX()
         val centerY = bounds.exactCenterY()
@@ -265,7 +298,7 @@ class ChronoLuxRenderer(
         drawHand(canvas, centerX, centerY, hourAngle, radius * 0.50f, hourHandPaint)
         drawHand(canvas, centerX, centerY, minuteAngle, radius * 0.72f, minuteHandPaint)
 
-        if (!isAmbient) {
+        if (drawSecondHand) {
             val secondAngle = seconds / 60.0 * TWO_PI
             drawHand(canvas, centerX, centerY, secondAngle, radius * 0.80f, secondHandPaint)
         }

@@ -1,6 +1,5 @@
 package com.chronolux.watchface.style
 
-import android.graphics.Color
 import androidx.annotation.StringRes
 import com.chronolux.watchface.R
 
@@ -8,6 +7,10 @@ import com.chronolux.watchface.R
  * Color palettes for the face. Each theme defines the accent used for hands
  * and highlights, a secondary tone for ticks/labels, and a background pair
  * used to paint a subtle radial gradient.
+ *
+ * Colors are stored as packed ARGB ints (0xAARRGGBB) rather than parsed from
+ * strings via `android.graphics.Color`, so this enum has no Android framework
+ * dependency and is unit-testable on a plain JVM.
  */
 enum class ColorTheme(
     val id: String,
@@ -20,34 +23,34 @@ enum class ColorTheme(
     MIDNIGHT_GOLD(
         id = "midnight_gold",
         displayNameRes = R.string.theme_midnight_gold,
-        accent = Color.parseColor("#E8C36A"),
-        secondary = Color.parseColor("#8A7A52"),
-        backgroundInner = Color.parseColor("#1A1A22"),
-        backgroundOuter = Color.parseColor("#06060A")
+        accent = 0xFFE8C36A.toInt(),
+        secondary = 0xFF8A7A52.toInt(),
+        backgroundInner = 0xFF1A1A22.toInt(),
+        backgroundOuter = 0xFF06060A.toInt()
     ),
     OCEAN(
         id = "ocean",
         displayNameRes = R.string.theme_ocean,
-        accent = Color.parseColor("#5AC8FA"),
-        secondary = Color.parseColor("#3A7A96"),
-        backgroundInner = Color.parseColor("#0E1B26"),
-        backgroundOuter = Color.parseColor("#04080C")
+        accent = 0xFF5AC8FA.toInt(),
+        secondary = 0xFF3A7A96.toInt(),
+        backgroundInner = 0xFF0E1B26.toInt(),
+        backgroundOuter = 0xFF04080C.toInt()
     ),
     CRIMSON(
         id = "crimson",
         displayNameRes = R.string.theme_crimson,
-        accent = Color.parseColor("#F25C5C"),
-        secondary = Color.parseColor("#8C3A3A"),
-        backgroundInner = Color.parseColor("#22100F"),
-        backgroundOuter = Color.parseColor("#0A0404")
+        accent = 0xFFF25C5C.toInt(),
+        secondary = 0xFF8C3A3A.toInt(),
+        backgroundInner = 0xFF22100F.toInt(),
+        backgroundOuter = 0xFF0A0404.toInt()
     ),
     FOREST(
         id = "forest",
         displayNameRes = R.string.theme_forest,
-        accent = Color.parseColor("#7ED491"),
-        secondary = Color.parseColor("#447750"),
-        backgroundInner = Color.parseColor("#0F1F14"),
-        backgroundOuter = Color.parseColor("#040A06")
+        accent = 0xFF7ED491.toInt(),
+        secondary = 0xFF447750.toInt(),
+        backgroundInner = 0xFF0F1F14.toInt(),
+        backgroundOuter = 0xFF040A06.toInt()
     );
 
     companion object {

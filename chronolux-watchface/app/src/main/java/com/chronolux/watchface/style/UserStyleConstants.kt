@@ -13,6 +13,10 @@ object StyleIds {
     const val COLOR_THEME = "color_theme"
     const val LAYOUT_MODE = "layout_mode"
     const val SHOW_TICKS = "show_ticks"
+    const val TIME_FORMAT = "time_format"
+    const val SHOW_SECONDS = "show_seconds"
+    const val DATE_FORMAT = "date_format"
+    const val ACCENT_COLOR = "accent_color"
 }
 
 /** Layout modes supported by the face. */
@@ -80,5 +84,76 @@ fun createUserStyleSchema(context: Context): UserStyleSchema {
         defaultValue = true
     )
 
-    return UserStyleSchema(listOf(colorSetting, layoutSetting, ticksSetting))
+    val accentSetting = ListUserStyleSetting(
+        UserStyleSetting.Id(StyleIds.ACCENT_COLOR),
+        context.resources,
+        R.string.setting_accent_color,
+        R.string.setting_accent_color_description,
+        icon = null,
+        options = AccentColor.entries.map { accent ->
+            ListUserStyleSetting.ListOption(
+                UserStyleSetting.Option.Id(accent.id),
+                context.resources,
+                accent.displayNameRes,
+                icon = null
+            )
+        },
+        listOf(WatchFaceLayer.BASE, WatchFaceLayer.COMPLICATIONS_OVERLAY)
+    )
+
+    val timeFormatSetting = ListUserStyleSetting(
+        UserStyleSetting.Id(StyleIds.TIME_FORMAT),
+        context.resources,
+        R.string.setting_time_format,
+        R.string.setting_time_format_description,
+        icon = null,
+        options = TimeFormat.entries.map { format ->
+            ListUserStyleSetting.ListOption(
+                UserStyleSetting.Option.Id(format.id),
+                context.resources,
+                format.displayNameRes,
+                icon = null
+            )
+        },
+        listOf(WatchFaceLayer.BASE)
+    )
+
+    val dateFormatSetting = ListUserStyleSetting(
+        UserStyleSetting.Id(StyleIds.DATE_FORMAT),
+        context.resources,
+        R.string.setting_date_format,
+        R.string.setting_date_format_description,
+        icon = null,
+        options = DateFormat.entries.map { format ->
+            ListUserStyleSetting.ListOption(
+                UserStyleSetting.Option.Id(format.id),
+                context.resources,
+                format.displayNameRes,
+                icon = null
+            )
+        },
+        listOf(WatchFaceLayer.BASE)
+    )
+
+    val secondsSetting = BooleanUserStyleSetting(
+        UserStyleSetting.Id(StyleIds.SHOW_SECONDS),
+        context.resources,
+        R.string.setting_show_seconds,
+        R.string.setting_show_seconds_description,
+        icon = null,
+        listOf(WatchFaceLayer.BASE),
+        defaultValue = true
+    )
+
+    return UserStyleSchema(
+        listOf(
+            colorSetting,
+            accentSetting,
+            layoutSetting,
+            timeFormatSetting,
+            dateFormatSetting,
+            ticksSetting,
+            secondsSetting
+        )
+    )
 }

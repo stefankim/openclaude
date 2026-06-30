@@ -65,10 +65,46 @@ class WatchFaceConfigActivity : ComponentActivity() {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
+                            label = { Text(getString(R.string.setting_accent_color)) },
+                            secondaryLabel = { Text(uiState.accentColorName) },
+                            colors = ChipDefaults.primaryChipColors(),
+                            onClick = { stateHolder.nextAccentColor() }
+                        )
+                    }
+
+                    item {
+                        Chip(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
                             label = { Text(getString(R.string.setting_layout_mode)) },
                             secondaryLabel = { Text(uiState.layoutModeName) },
                             colors = ChipDefaults.primaryChipColors(),
                             onClick = { stateHolder.nextLayoutMode() }
+                        )
+                    }
+
+                    item {
+                        Chip(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            label = { Text(getString(R.string.setting_time_format)) },
+                            secondaryLabel = { Text(uiState.timeFormatName) },
+                            colors = ChipDefaults.primaryChipColors(),
+                            onClick = { stateHolder.nextTimeFormat() }
+                        )
+                    }
+
+                    item {
+                        Chip(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            label = { Text(getString(R.string.setting_date_format)) },
+                            secondaryLabel = { Text(uiState.dateFormatName) },
+                            colors = ChipDefaults.primaryChipColors(),
+                            onClick = { stateHolder.nextDateFormat() }
                         )
                     }
 
@@ -82,6 +118,21 @@ class WatchFaceConfigActivity : ComponentActivity() {
                             label = { Text(getString(R.string.setting_show_ticks)) },
                             toggleControl = {
                                 androidx.wear.compose.material.Switch(checked = uiState.ticksEnabled)
+                            },
+                            colors = ToggleChipDefaults.toggleChipColors()
+                        )
+                    }
+
+                    item {
+                        ToggleChip(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            checked = uiState.secondsEnabled,
+                            onCheckedChange = { stateHolder.setSecondsEnabled(it) },
+                            label = { Text(getString(R.string.setting_show_seconds)) },
+                            toggleControl = {
+                                androidx.wear.compose.material.Switch(checked = uiState.secondsEnabled)
                             },
                             colors = ToggleChipDefaults.toggleChipColors()
                         )

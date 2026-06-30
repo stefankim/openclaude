@@ -11,6 +11,30 @@
     <string name="setting_layout_mode_description">Analog, digital or hybrid time display</string>
     <string name="setting_show_ticks">Minute ticks</string>
     <string name="setting_show_ticks_description">Show the minute tick ring</string>
+    <string name="setting_show_seconds">Second hand</string>
+    <string name="setting_show_seconds_description">Show the sweeping second hand</string>
+    <string name="setting_accent_color">Accent color</string>
+    <string name="setting_accent_color_description">Override the theme accent</string>
+    <string name="setting_time_format">Time format</string>
+    <string name="setting_time_format_description">12-hour or 24-hour clock</string>
+    <string name="setting_date_format">Date format</string>
+    <string name="setting_date_format_description">How the date is displayed</string>
+
+    <string name="time_format_24h">24-hour</string>
+    <string name="time_format_12h">12-hour</string>
+
+    <string name="date_format_weekday">Wed 8 Jan</string>
+    <string name="date_format_numeric">8/1</string>
+    <string name="date_format_month_day">Jan 8</string>
+
+    <string name="accent_default">Theme default</string>
+    <string name="accent_gold">Gold</string>
+    <string name="accent_coral">Coral</string>
+    <string name="accent_sky">Sky</string>
+    <string name="accent_mint">Mint</string>
+    <string name="accent_violet">Violet</string>
+    <string name="accent_rose">Rose</string>
+    <string name="accent_snow">Snow</string>
 
     <string name="layout_analog">Analog</string>
     <string name="layout_digital">Digital</string>
