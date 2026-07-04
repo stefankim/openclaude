@@ -51,6 +51,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var weedStatusIcon: TextView
     private lateinit var weedStatusText: TextView
     private lateinit var weedReasonText: TextView
+    private lateinit var removalCard: View
+    private lateinit var removalText: TextView
     private lateinit var descriptionText: TextView
     private lateinit var learnMoreLink: TextView
     private lateinit var loadingOverlay: View
@@ -92,6 +94,8 @@ class MainActivity : AppCompatActivity() {
         weedStatusIcon = findViewById(R.id.weedStatusIcon)
         weedStatusText = findViewById(R.id.weedStatusText)
         weedReasonText = findViewById(R.id.weedReasonText)
+        removalCard = findViewById(R.id.removalCard)
+        removalText = findViewById(R.id.removalText)
         descriptionText = findViewById(R.id.descriptionText)
         learnMoreLink = findViewById(R.id.learnMoreLink)
         loadingOverlay = findViewById(R.id.loadingOverlay)
@@ -307,11 +311,14 @@ class MainActivity : AppCompatActivity() {
             weedStatusText.text = getString(R.string.weed_status_weed)
             weedReasonText.text = weedInfo.reason
             weedReasonText.visibility = View.VISIBLE
+            removalText.text = weedInfo.removal
+            removalCard.visibility = View.VISIBLE
         } else {
             weedStatusBanner.setBackgroundColor(0xFF2E7D32.toInt())
             weedStatusIcon.text = "✓"
             weedStatusText.text = getString(R.string.weed_status_safe)
             weedReasonText.visibility = View.GONE
+            removalCard.visibility = View.GONE
         }
 
         resultCard.visibility = View.VISIBLE
@@ -389,6 +396,7 @@ class MainActivity : AppCompatActivity() {
                 confidence = currentConfidence,
                 isWeed = currentWeedInfo != null,
                 weedReason = currentWeedInfo?.reason,
+                weedRemoval = currentWeedInfo?.removal,
                 description = currentDescription,
                 wikipediaUrl = currentWikipediaUrl,
                 bitmap = lastCapturedBitmap

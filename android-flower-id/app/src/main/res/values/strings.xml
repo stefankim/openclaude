@@ -55,4 +55,6 @@
     <string name="language_label">Language</string>
     <string name="language_english">English</string>
     <string name="language_slovak">Slovenčina</string>
+    <string name="removal_heading">🌿 How to get rid of it</string>
+    <string name="weed_reason_heading">Why it\'s a weed</string>
 </resources>

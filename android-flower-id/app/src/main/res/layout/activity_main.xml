@@ -284,6 +284,38 @@
                 android:layout_marginTop="8dp"
                 android:visibility="gone" />
 
+            <!-- How to remove it (weeds only) -->
+            <LinearLayout
+                android:id="@+id/removalCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/removal_card_bg"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="14dp"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="16dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/removalHeading"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/removal_heading"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="#1B5E20" />
+
+                <TextView
+                    android:id="@+id/removalText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="14sp"
+                    android:textColor="#33461F"
+                    android:lineSpacingMultiplier="1.4"
+                    android:layout_marginTop="6dp" />
+            </LinearLayout>
+
             <!-- Scan again button -->
             <Button
                 android:id="@+id/scanAgainButton"

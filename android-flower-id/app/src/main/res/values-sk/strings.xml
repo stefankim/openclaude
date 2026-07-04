@@ -55,4 +55,6 @@
     <string name="language_label">Jazyk</string>
     <string name="language_english">English</string>
     <string name="language_slovak">Slovenčina</string>
+    <string name="removal_heading">🌿 Ako sa jej zbaviť</string>
+    <string name="weed_reason_heading">Prečo je to burina</string>
 </resources>

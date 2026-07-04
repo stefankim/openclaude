@@ -7,6 +7,7 @@ data class Favorite(
     val confidence: Double,
     val isWeed: Boolean,
     val weedReason: String?,
+    val weedRemoval: String?,
     val description: String?,
     val wikipediaUrl: String?,
     val imageFileName: String,

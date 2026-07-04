@@ -57,6 +57,8 @@ class FavoritesActivity : AppCompatActivity() {
         val description = view.findViewById<TextView>(R.id.detailDescription)
         val learnMoreLink = view.findViewById<TextView>(R.id.detailLearnMoreLink)
         val weedReason = view.findViewById<TextView>(R.id.detailWeedReason)
+        val removalCard = view.findViewById<LinearLayout>(R.id.detailRemovalCard)
+        val removalText = view.findViewById<TextView>(R.id.detailRemovalText)
 
         FavoritesStore.loadImage(this, favorite.imageFileName)?.let { image.setImageBitmap(it) }
 
@@ -70,11 +72,16 @@ class FavoritesActivity : AppCompatActivity() {
             weedText.text = getString(R.string.weed_status_weed)
             weedReason.text = favorite.weedReason
             weedReason.visibility = View.VISIBLE
+            if (!favorite.weedRemoval.isNullOrBlank()) {
+                removalText.text = favorite.weedRemoval
+                removalCard.visibility = View.VISIBLE
+            }
         } else {
             banner.setBackgroundColor(0xFF2E7D32.toInt())
             weedIcon.text = "✓"
             weedText.text = getString(R.string.weed_status_safe)
             weedReason.visibility = View.GONE
+            removalCard.visibility = View.GONE
         }
 
         if (!favorite.description.isNullOrBlank()) {
