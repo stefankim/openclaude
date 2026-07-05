@@ -76,4 +76,12 @@
 
     <!-- Alternate matches -->
     <string name="other_matches">Nesprávne? Ďalšie možné zhody:</string>
+
+    <!-- Low confidence -->
+    <string name="low_confidence_hint">🔍 Nízka spoľahlivosť — skúste bližšiu a ostrejšiu fotku listov alebo kvetu</string>
+
+    <!-- Share -->
+    <string name="share_result">Zdieľať</string>
+    <string name="share_weed_line">Burina — odstráňte ju</string>
+    <string name="share_safe_line">Nie je burina — nechajte ju</string>
 </resources>

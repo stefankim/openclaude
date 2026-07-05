@@ -308,6 +308,90 @@ object WeedDatabase {
             Severity.MILD,
             null
         ),
+        "heracleum" to WeedInfo(
+            "Hogweed / Giant Hogweed",
+            "Giant hogweed is a dangerous invasive — sap causes severe burns; regular hogweed also spreads aggressively",
+            "Do NOT touch it or strim it — the sap plus sunlight causes severe skin burns and blistering. For giant hogweed, call a professional. Small common hogweed can be dug out wearing full covering, gloves and eye protection.",
+            Severity.NOTIFIABLE,
+            "Sap causes severe burns and blisters in sunlight — do NOT touch bare-skinned; dangerous to children and pets"
+        ),
+        "equisetum" to WeedInfo(
+            "Horsetail / Marestail",
+            "Ancient deep-rooted weed, rhizomes reach 2m down, extremely persistent",
+            "You can't dig it out fully — roots go metres deep. Keep cutting shoots to starve it and improve drainage. Crush the stems then treat with a glyphosate-based weedkiller; expect a multi-year effort.",
+            Severity.AGGRESSIVE,
+            "Toxic to horses and livestock if eaten in quantity"
+        ),
+        "glechoma" to WeedInfo(
+            "Ground Ivy / Creeping Charlie",
+            "Creeping stems root at every node and quickly carpet lawns and beds",
+            "Rake up the runners and hand-pull after rain — every rooted node must come out. Improve lawn drainage and light. Spot-treat with a selective broadleaf weedkiller in autumn.",
+            Severity.AGGRESSIVE,
+            null
+        ),
+        "alliaria" to WeedInfo(
+            "Garlic Mustard",
+            "Invasive biennial that outcompetes native plants and self-seeds heavily",
+            "Hand-pull before it flowers in its second year, taking the S-shaped root. Bag pulled plants — they can still set seed. Recheck the area for two seasons.",
+            Severity.AGGRESSIVE,
+            null
+        ),
+        "anthriscus" to WeedInfo(
+            "Cow Parsley",
+            "Rapid spring grower that swamps borders and self-seeds prolifically",
+            "Dig out the taproot of young plants; cut established stands before flowering to stop seeding. Repeated cutting exhausts the root over a couple of seasons.",
+            Severity.MILD,
+            "Easily confused with toxic hemlock — wear gloves and don't eat any part"
+        ),
+        "epilobium" to WeedInfo(
+            "Willowherb",
+            "Wind-blown seeds colonise any bare soil, roots snap when pulled",
+            "Pull young plants when the soil is moist so the root comes out whole. Never let it flower — one plant releases tens of thousands of seeds. Mulch beds thickly.",
+            Severity.MILD,
+            null
+        ),
+        "conyza" to WeedInfo(
+            "Fleabane",
+            "Tall annual producing huge numbers of wind-dispersed seeds, herbicide-resistant strains exist",
+            "Hand-pull or hoe while it is a small rosette — mature plants resist many weedkillers. Never let it set seed; mulch bare ground.",
+            Severity.MILD,
+            null
+        ),
+        "amaranthus" to WeedInfo(
+            "Pigweed",
+            "Fast-growing annual, one plant can shed over 100,000 seeds",
+            "Hoe or pull seedlings early — plants outgrow crops within weeks. Remove before flowering and mulch. Persistent seed bank means checking for several seasons.",
+            Severity.AGGRESSIVE,
+            null
+        ),
+        "portulaca" to WeedInfo(
+            "Purslane",
+            "Succulent mat-former; stem fragments re-root and seeds survive decades",
+            "Hoe on a hot dry day and remove the pieces — fragments left on moist soil re-root. Don't compost it. Mulch to block the long-lived seeds.",
+            Severity.MILD,
+            null
+        ),
+        "setaria" to WeedInfo(
+            "Foxtail Grass",
+            "Annual grass whose bristly seed heads dominate thin lawns in summer",
+            "Pull or dig clumps before seed heads form. Mow high and overseed to thicken the lawn; a spring pre-emergent herbicide stops the seeds germinating.",
+            Severity.MILD,
+            "Bristly seed heads can lodge in pets' paws, ears and noses"
+        ),
+        "echinochloa" to WeedInfo(
+            "Barnyard Grass",
+            "Vigorous annual grass of damp, disturbed ground; heavy seeder",
+            "Pull or hoe young clumps before they seed, ideally when soil is moist. Improve drainage and keep grass dense — it only invades thin, wet patches.",
+            Severity.MILD,
+            null
+        ),
+        "mercurialis" to WeedInfo(
+            "Dog's Mercury",
+            "Shade-loving carpeting weed that spreads by rhizomes under hedges and trees",
+            "Dig out the shallow rhizomes with a fork and repeat as regrowth appears. Wear gloves. Planting dense ground cover shades it out over time.",
+            Severity.MILD,
+            "Poisonous to people and pets if eaten"
+        ),
     )
 
     fun identify(scientificName: String): WeedInfo? {

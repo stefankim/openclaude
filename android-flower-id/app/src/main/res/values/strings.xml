@@ -76,4 +76,12 @@
 
     <!-- Alternate matches -->
     <string name="other_matches">Not right? Other possible matches:</string>
+
+    <!-- Low confidence -->
+    <string name="low_confidence_hint">🔍 Low confidence — try a closer, sharper photo of the leaves or flower</string>
+
+    <!-- Share -->
+    <string name="share_result">Share</string>
+    <string name="share_weed_line">Weed — remove it</string>
+    <string name="share_safe_line">Not a weed — keep it</string>
 </resources>

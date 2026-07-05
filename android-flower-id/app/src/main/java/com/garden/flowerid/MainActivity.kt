@@ -54,6 +54,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var removalCard: View
     private lateinit var removalText: TextView
     private lateinit var safetyWarning: TextView
+    private lateinit var lowConfidenceHint: TextView
     private lateinit var alternativesContainer: android.widget.LinearLayout
     private lateinit var descriptionText: TextView
     private lateinit var learnMoreLink: TextView
@@ -123,6 +124,7 @@ class MainActivity : AppCompatActivity() {
         removalCard = findViewById(R.id.removalCard)
         removalText = findViewById(R.id.removalText)
         safetyWarning = findViewById(R.id.safetyWarning)
+        lowConfidenceHint = findViewById(R.id.lowConfidenceHint)
         alternativesContainer = findViewById(R.id.alternativesContainer)
         descriptionText = findViewById(R.id.descriptionText)
         learnMoreLink = findViewById(R.id.learnMoreLink)
@@ -141,6 +143,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<ImageButton>(R.id.galleryButton).setOnClickListener { pickFromGallery() }
         closeResultButton.setOnClickListener { hideResult() }
         scanAgainButton.setOnClickListener { hideResult() }
+        findViewById<Button>(R.id.shareButton).setOnClickListener { shareResult() }
         favoriteButton.setOnClickListener { toggleFavorite() }
         findViewById<ImageButton>(R.id.settingsButton).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -423,6 +426,8 @@ class MainActivity : AppCompatActivity() {
             safetyWarning.visibility = View.GONE
         }
 
+        lowConfidenceHint.visibility = if (confidence < 30) View.VISIBLE else View.GONE
+
         resultCard.visibility = View.VISIBLE
         instructionText.visibility = View.GONE
 
@@ -519,6 +524,30 @@ class MainActivity : AppCompatActivity() {
 
     private fun pickFromGallery() {
         galleryLauncher.launch("image/*")
+    }
+
+    private fun shareResult() {
+        val commonName = currentCommonName ?: return
+        val weedInfo = currentWeedInfo
+        val text = buildString {
+            append("🌿 $commonName ($currentScientificName)\n")
+            append(getString(R.string.confidence_format, currentConfidence))
+            append("\n\n")
+            if (weedInfo != null) {
+                append("☠ ${getString(R.string.share_weed_line)}\n")
+                append("${weedInfo.reason}\n\n")
+                append("${getString(R.string.removal_heading)}\n${weedInfo.removal}\n")
+                weedInfo.hazard?.let { append("\n${getString(R.string.safety_prefix, it)}\n") }
+            } else {
+                append("✓ ${getString(R.string.share_safe_line)}\n")
+            }
+            currentWikipediaUrl?.let { append("\n$it") }
+        }
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        startActivity(Intent.createChooser(intent, getString(R.string.share_result)))
     }
 
     private fun hideResult() {
