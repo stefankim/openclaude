@@ -53,6 +53,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var weedReasonText: TextView
     private lateinit var removalCard: View
     private lateinit var removalText: TextView
+    private lateinit var safetyWarning: TextView
+    private lateinit var alternativesContainer: android.widget.LinearLayout
     private lateinit var descriptionText: TextView
     private lateinit var learnMoreLink: TextView
     private lateinit var loadingOverlay: View
@@ -70,6 +72,30 @@ class MainActivity : AppCompatActivity() {
     private var currentWikipediaUrl: String? = null
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
+
+    private val galleryLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri == null) return@registerForActivityResult
+        val apiKey = getSharedPreferences("prefs", MODE_PRIVATE)
+            .getString("api_key", "") ?: ""
+        if (apiKey.isBlank()) {
+            Toast.makeText(this, R.string.set_api_key_first, Toast.LENGTH_LONG).show()
+            startActivity(Intent(this, SettingsActivity::class.java))
+            return@registerForActivityResult
+        }
+        val bitmap = try {
+            contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
+        } catch (e: Exception) {
+            null
+        }
+        if (bitmap == null) {
+            Toast.makeText(this, R.string.could_not_load_image, Toast.LENGTH_SHORT).show()
+            return@registerForActivityResult
+        }
+        showLoading(true)
+        identifyPlant(bitmap, apiKey)
+    }
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
@@ -96,6 +122,8 @@ class MainActivity : AppCompatActivity() {
         weedReasonText = findViewById(R.id.weedReasonText)
         removalCard = findViewById(R.id.removalCard)
         removalText = findViewById(R.id.removalText)
+        safetyWarning = findViewById(R.id.safetyWarning)
+        alternativesContainer = findViewById(R.id.alternativesContainer)
         descriptionText = findViewById(R.id.descriptionText)
         learnMoreLink = findViewById(R.id.learnMoreLink)
         loadingOverlay = findViewById(R.id.loadingOverlay)
@@ -110,6 +138,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         captureButton.setOnClickListener { takePhoto() }
+        findViewById<ImageButton>(R.id.galleryButton).setOnClickListener { pickFromGallery() }
         closeResultButton.setOnClickListener { hideResult() }
         scanAgainButton.setOnClickListener { hideResult() }
         favoriteButton.setOnClickListener { toggleFavorite() }
@@ -264,6 +293,12 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    data class Candidate(
+        val commonName: String,
+        val scientificName: String,
+        val confidence: Double
+    )
+
     private fun parseAndShow(json: String) {
         try {
             val root = JsonParser.parseString(json).asJsonObject
@@ -272,18 +307,64 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, R.string.plant_not_recognized, Toast.LENGTH_LONG).show()
                 return
             }
-            val top = results[0].asJsonObject
-            val species = top.getAsJsonObject("species")
-            val scientificName = species.get("scientificNameWithoutAuthor")?.asString ?: "Unknown"
-            val commonNames = species.getAsJsonArray("commonNames")
-            val commonName = if (commonNames != null && commonNames.size() > 0)
-                commonNames[0].asString else scientificName
-            val score = (top.get("score")?.asDouble ?: 0.0) * 100
-
-            showResult(commonName, scientificName, score, WeedDatabase.identify(scientificName))
+            val candidates = results.take(3).mapNotNull { el ->
+                try {
+                    val obj = el.asJsonObject
+                    val species = obj.getAsJsonObject("species")
+                    val scientificName =
+                        species.get("scientificNameWithoutAuthor")?.asString ?: return@mapNotNull null
+                    val commonNames = species.getAsJsonArray("commonNames")
+                    val commonName = if (commonNames != null && commonNames.size() > 0)
+                        commonNames[0].asString else scientificName
+                    Candidate(commonName, scientificName, (obj.get("score")?.asDouble ?: 0.0) * 100)
+                } catch (e: Exception) {
+                    null
+                }
+            }
+            if (candidates.isEmpty()) {
+                Toast.makeText(this, R.string.plant_not_recognized, Toast.LENGTH_LONG).show()
+                return
+            }
+            showCandidate(candidates, 0)
         } catch (e: Exception) {
             Toast.makeText(this, R.string.could_not_parse_response, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun showCandidate(candidates: List<Candidate>, index: Int) {
+        val chosen = candidates[index]
+        showResult(
+            chosen.commonName, chosen.scientificName, chosen.confidence,
+            WeedDatabase.identify(chosen.scientificName)
+        )
+        showAlternatives(candidates, index)
+    }
+
+    private fun showAlternatives(candidates: List<Candidate>, currentIndex: Int) {
+        // Remove previously added rows (keep the heading at index 0)
+        while (alternativesContainer.childCount > 1) {
+            alternativesContainer.removeViewAt(alternativesContainer.childCount - 1)
+        }
+        val others = candidates.indices.filter { it != currentIndex }
+        if (others.isEmpty()) {
+            alternativesContainer.visibility = View.GONE
+            return
+        }
+        others.forEach { i ->
+            val c = candidates[i]
+            val row = TextView(this).apply {
+                text = "• ${c.commonName} (${c.scientificName}) — ${c.confidence.toInt()}%"
+                textSize = 14f
+                setTextColor(0xFF1565C0.toInt())
+                setPadding(0, 10, 0, 10)
+                setBackgroundResource(
+                    android.R.color.transparent
+                )
+                setOnClickListener { showCandidate(candidates, i) }
+            }
+            alternativesContainer.addView(row)
+        }
+        alternativesContainer.visibility = View.VISIBLE
     }
 
     private fun showResult(
@@ -306,9 +387,23 @@ class MainActivity : AppCompatActivity() {
         updateFavoriteButtonState()
 
         if (weedInfo != null) {
-            weedStatusBanner.setBackgroundColor(0xFFC62828.toInt())
-            weedStatusIcon.text = "☠"
-            weedStatusText.text = getString(R.string.weed_status_weed)
+            when (weedInfo.severity) {
+                WeedDatabase.Severity.MILD -> {
+                    weedStatusBanner.setBackgroundColor(0xFFEF6C00.toInt())
+                    weedStatusIcon.text = "⚠"
+                    weedStatusText.text = getString(R.string.weed_status_weed_mild)
+                }
+                WeedDatabase.Severity.AGGRESSIVE -> {
+                    weedStatusBanner.setBackgroundColor(0xFFC62828.toInt())
+                    weedStatusIcon.text = "☠"
+                    weedStatusText.text = getString(R.string.weed_status_weed_aggressive)
+                }
+                WeedDatabase.Severity.NOTIFIABLE -> {
+                    weedStatusBanner.setBackgroundColor(0xFF4A148C.toInt())
+                    weedStatusIcon.text = "⛔"
+                    weedStatusText.text = getString(R.string.weed_status_weed_notifiable)
+                }
+            }
             weedReasonText.text = weedInfo.reason
             weedReasonText.visibility = View.VISIBLE
             removalText.text = weedInfo.removal
@@ -319,6 +414,13 @@ class MainActivity : AppCompatActivity() {
             weedStatusText.text = getString(R.string.weed_status_safe)
             weedReasonText.visibility = View.GONE
             removalCard.visibility = View.GONE
+        }
+
+        if (weedInfo?.hazard != null) {
+            safetyWarning.text = getString(R.string.safety_prefix, weedInfo.hazard)
+            safetyWarning.visibility = View.VISIBLE
+        } else {
+            safetyWarning.visibility = View.GONE
         }
 
         resultCard.visibility = View.VISIBLE
@@ -397,6 +499,8 @@ class MainActivity : AppCompatActivity() {
                 isWeed = currentWeedInfo != null,
                 weedReason = currentWeedInfo?.reason,
                 weedRemoval = currentWeedInfo?.removal,
+                weedSeverity = currentWeedInfo?.severity?.name,
+                weedHazard = currentWeedInfo?.hazard,
                 description = currentDescription,
                 wikipediaUrl = currentWikipediaUrl,
                 bitmap = lastCapturedBitmap
@@ -413,8 +517,13 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    private fun pickFromGallery() {
+        galleryLauncher.launch("image/*")
+    }
+
     private fun hideResult() {
         resultCard.visibility = View.GONE
+        alternativesContainer.visibility = View.GONE
         instructionText.visibility = View.VISIBLE
     }
 

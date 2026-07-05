@@ -57,4 +57,23 @@
     <string name="language_slovak">Slovenčina</string>
     <string name="removal_heading">🌿 Ako sa jej zbaviť</string>
     <string name="weed_reason_heading">Prečo je to burina</string>
+
+    <!-- Weed severity -->
+    <string name="weed_status_weed_mild">BURINA (mierna) — Ľahko odstrániteľná</string>
+    <string name="weed_status_weed_aggressive">BURINA — Odstráňte ju!</string>
+    <string name="weed_status_weed_notifiable">INVÁZNA — Postupujte opatrne!</string>
+    <string name="severity_mild">Mierna</string>
+    <string name="severity_aggressive">Agresívna</string>
+    <string name="severity_notifiable">Ohlasovaná / invázna</string>
+
+    <!-- Safety -->
+    <string name="safety_prefix">⚠ Bezpečnosť: %1$s</string>
+
+    <!-- Gallery -->
+    <string name="content_desc_pick_gallery">Vybrať fotku z galérie</string>
+    <string name="no_image_selected">Nebola vybraná žiadna fotka</string>
+    <string name="could_not_load_image">Túto fotku sa nepodarilo načítať</string>
+
+    <!-- Alternate matches -->
+    <string name="other_matches">Nesprávne? Ďalšie možné zhody:</string>
 </resources>

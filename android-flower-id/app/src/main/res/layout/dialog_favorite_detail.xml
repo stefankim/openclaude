@@ -118,6 +118,22 @@
             android:layout_marginTop="8dp"
             android:visibility="gone" />
 
+        <!-- Safety warning (toxic / irritant / sting) -->
+        <TextView
+            android:id="@+id/detailSafetyWarning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="#8A5300"
+            android:background="@drawable/safety_card_bg"
+            android:lineSpacingMultiplier="1.3"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="10dp"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="10dp"
+            android:visibility="gone" />
+
         <!-- How to remove it (weeds only) -->
         <LinearLayout
             android:id="@+id/detailRemovalCard"

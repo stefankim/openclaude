@@ -8,6 +8,8 @@ data class Favorite(
     val isWeed: Boolean,
     val weedReason: String?,
     val weedRemoval: String?,
+    val weedSeverity: String?,
+    val weedHazard: String?,
     val description: String?,
     val wikipediaUrl: String?,
     val imageFileName: String,

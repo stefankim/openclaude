@@ -57,4 +57,23 @@
     <string name="language_slovak">Slovenčina</string>
     <string name="removal_heading">🌿 How to get rid of it</string>
     <string name="weed_reason_heading">Why it\'s a weed</string>
+
+    <!-- Weed severity -->
+    <string name="weed_status_weed_mild">WEED (mild) — Easy to remove</string>
+    <string name="weed_status_weed_aggressive">WEED — Remove it!</string>
+    <string name="weed_status_weed_notifiable">INVASIVE — Handle with care!</string>
+    <string name="severity_mild">Mild</string>
+    <string name="severity_aggressive">Aggressive</string>
+    <string name="severity_notifiable">Notifiable / invasive</string>
+
+    <!-- Safety -->
+    <string name="safety_prefix">⚠ Safety: %1$s</string>
+
+    <!-- Gallery -->
+    <string name="content_desc_pick_gallery">Pick photo from gallery</string>
+    <string name="no_image_selected">No image selected</string>
+    <string name="could_not_load_image">Could not load that image</string>
+
+    <!-- Alternate matches -->
+    <string name="other_matches">Not right? Other possible matches:</string>
 </resources>

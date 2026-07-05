@@ -59,6 +59,7 @@ class FavoritesActivity : AppCompatActivity() {
         val weedReason = view.findViewById<TextView>(R.id.detailWeedReason)
         val removalCard = view.findViewById<LinearLayout>(R.id.detailRemovalCard)
         val removalText = view.findViewById<TextView>(R.id.detailRemovalText)
+        val safetyWarning = view.findViewById<TextView>(R.id.detailSafetyWarning)
 
         FavoritesStore.loadImage(this, favorite.imageFileName)?.let { image.setImageBitmap(it) }
 
@@ -67,14 +68,32 @@ class FavoritesActivity : AppCompatActivity() {
         confidence.text = getString(R.string.confidence_format, favorite.confidence)
 
         if (favorite.isWeed) {
-            banner.setBackgroundColor(0xFFC62828.toInt())
-            weedIcon.text = "☠"
-            weedText.text = getString(R.string.weed_status_weed)
+            when (favorite.weedSeverity) {
+                "MILD" -> {
+                    banner.setBackgroundColor(0xFFEF6C00.toInt())
+                    weedIcon.text = "⚠"
+                    weedText.text = getString(R.string.weed_status_weed_mild)
+                }
+                "NOTIFIABLE" -> {
+                    banner.setBackgroundColor(0xFF4A148C.toInt())
+                    weedIcon.text = "⛔"
+                    weedText.text = getString(R.string.weed_status_weed_notifiable)
+                }
+                else -> {
+                    banner.setBackgroundColor(0xFFC62828.toInt())
+                    weedIcon.text = "☠"
+                    weedText.text = getString(R.string.weed_status_weed_aggressive)
+                }
+            }
             weedReason.text = favorite.weedReason
             weedReason.visibility = View.VISIBLE
             if (!favorite.weedRemoval.isNullOrBlank()) {
                 removalText.text = favorite.weedRemoval
                 removalCard.visibility = View.VISIBLE
+            }
+            if (!favorite.weedHazard.isNullOrBlank()) {
+                safetyWarning.text = getString(R.string.safety_prefix, favorite.weedHazard)
+                safetyWarning.visibility = View.VISIBLE
             }
         } else {
             banner.setBackgroundColor(0xFF2E7D32.toInt())

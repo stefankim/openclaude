@@ -36,6 +36,8 @@ object FavoritesStore {
         isWeed: Boolean,
         weedReason: String?,
         weedRemoval: String?,
+        weedSeverity: String?,
+        weedHazard: String?,
         description: String?,
         wikipediaUrl: String?,
         bitmap: Bitmap?
@@ -44,7 +46,8 @@ object FavoritesStore {
         val imageFileName = if (bitmap != null) saveImage(context, bitmap, id) else ""
         val favorite = Favorite(
             id, commonName, scientificName, confidence, isWeed,
-            weedReason, weedRemoval, description, wikipediaUrl, imageFileName,
+            weedReason, weedRemoval, weedSeverity, weedHazard,
+            description, wikipediaUrl, imageFileName,
             System.currentTimeMillis()
         )
         val list = getAll(context).toMutableList()
