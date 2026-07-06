@@ -29,13 +29,14 @@ object VmImages {
         VmAsset(
             name = "kernel",
             url = "https://github.com/stefankim/openclaude/releases/download/dockerdroid-vm-assets/vmlinuz-aarch64",
-            sha256 = "REPLACED_AT_RELEASE",
+            sha256 = "67413f32aa2b03b6f9e0cb67642fbc324a051cb08e5748264733865ac97fe15d",
             fileName = "vmlinuz",
         ),
         VmAsset(
             name = "rootfs",
+            // NOTE: SHA-256 of the *gzip* asset; VmProvisioner verifies before gunzip.
             url = "https://github.com/stefankim/openclaude/releases/download/dockerdroid-vm-assets/docker-rootfs-arm64.img.gz",
-            sha256 = "REPLACED_AT_RELEASE",
+            sha256 = "8fbc9893a0aadc8ded628a4c418a2891f91f4a436bcc455a93c0d48a5ee8172e",
             fileName = "rootfs.img",
             gzipped = true,
         ),
