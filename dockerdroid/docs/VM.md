@@ -32,6 +32,18 @@ DockerDroid app
 | `qemu-system-aarch64` | **jniLib** (`app/src/main/jniLibs/arm64-v8a/libqemu-system-aarch64.so`) | Android only allows executing binaries from the read-only `nativeLibraryDir` (W^X / SELinux). `useLegacyPackaging=true` extracts it at install. |
 | `vmlinuz` + `rootfs.img` | **downloaded** to `filesDir/vm/` | They're read by QEMU as files, never executed, so they can be fetched at runtime and checksum-verified. |
 
+## Building the guest assets (automated)
+
+The kernel + Docker-enabled rootfs are built by the **`DockerDroid VM Assets`**
+workflow (`.github/workflows/dockerdroid-vm-assets.yml`, run via *Actions → Run
+workflow*). It emulates arm64 on the runner to assemble an Alpine guest with Docker
+(listening on `tcp://0.0.0.0:2375`), packs it into an ext4 image, and publishes
+`vmlinuz-aarch64` + `docker-rootfs-arm64.img.gz` to the `dockerdroid-vm-assets`
+release. The run summary prints their SHA-256 — paste those into `vm/VmImages.kt`.
+
+Because the guest is emulated, CI cannot boot-test it; validate on a device. The
+QEMU **engine** binary is still built separately (below).
+
 ## Building the native payload
 
 The app ships the *engine and wiring*; the native binaries are produced by

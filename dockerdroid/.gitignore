@@ -2,9 +2,11 @@
 .gradle/
 build/
 local.properties
+keystore.properties
 *.apk
 *.aab
 *.keystore
+*.jks
 captures/
 .cxx/
 

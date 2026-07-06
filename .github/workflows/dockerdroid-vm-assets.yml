@@ -1,0 +1,95 @@
+name: DockerDroid VM Assets
+
+# Builds the on-device VM's *guest* payload — a Linux kernel and a Docker-enabled
+# arm64 root filesystem — and publishes them as release assets that the app's
+# VmProvisioner downloads and checksum-verifies.
+#
+# NOTE: this produces the kernel + rootfs only. The QEMU engine binary
+# (libqemu-system-aarch64.so) is a separate native cross-compile that ships in the
+# APK's jniLibs; see docs/VM.md. The guest here is built by emulating arm64 on the
+# runner (binfmt/QEMU), so it cannot be boot-tested in CI — validate on device.
+on:
+  workflow_dispatch:
+    inputs:
+      alpine:
+        description: "Alpine version for the guest"
+        default: "3.20"
+  push:
+    branches: ["claude/dockerdroid-android-app-6ug06a"]
+
+permissions:
+  contents: write
+
+jobs:
+  build-guest:
+    # Heavy (arm64-emulated) build; only run on push when a commit opts in.
+    if: >-
+      github.event_name != 'push' ||
+      contains(github.event.head_commit.message, '[vm-assets]')
+    runs-on: ubuntu-latest
+    env:
+      ALPINE: ${{ github.event.inputs.alpine || '3.20' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable arm64 emulation
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Write guest Dockerfile
+        run: |
+          mkdir -p vmbuild out
+          cat > vmbuild/Dockerfile <<DOCKER
+          FROM alpine:${ALPINE}
+          # Docker + init + the kernel, plus cgroup/networking services.
+          RUN apk add --no-cache docker openrc util-linux e2fsprogs linux-virt \
+              && rc-update add cgroups boot \
+              && rc-update add networking boot \
+              && rc-update add docker default \
+              && rc-update add local default \
+              && mkdir -p /etc/docker \
+              && printf '{"hosts":["tcp://0.0.0.0:2375","unix:///var/run/docker.sock"],"tls":false,"storage-driver":"overlay2"}\n' > /etc/docker/daemon.json \
+              && printf 'auto eth0\niface eth0 inet dhcp\n' > /etc/network/interfaces \
+              && printf 'root::19000:0:99999:7:::\n' > /dev/null \
+              && sed -i 's/^root:[^:]*:/root::/' /etc/shadow \
+              && echo 'ttyAMA0::respawn:/sbin/getty -L ttyAMA0 115200 vt100' >> /etc/inittab
+          DOCKER
+
+      - name: Build arm64 guest image
+        run: |
+          docker buildx build --platform linux/arm64 -t ddroid-guest --load vmbuild
+
+      - name: Export rootfs + kernel
+        run: |
+          docker create --platform linux/arm64 --name guest ddroid-guest /sbin/init
+          mkdir -p rootdir
+          docker export guest | sudo tar -C rootdir -xf -
+          # Kernel image (arm64 'virt').
+          KIMG=$(ls rootdir/boot/vmlinuz-virt 2>/dev/null || ls rootdir/boot/vmlinuz* | head -1)
+          cp "$KIMG" out/vmlinuz-aarch64
+          # Pack the root filesystem into a raw ext4 image, then gzip it.
+          dd if=/dev/zero of=out/rootfs.img bs=1M count=1536
+          sudo mkfs.ext4 -F -L dockerdroid -d rootdir out/rootfs.img
+          gzip -f out/rootfs.img
+          mv out/rootfs.img.gz out/docker-rootfs-arm64.img.gz
+
+      - name: Checksums (pin these into vm/VmImages.kt)
+        run: |
+          cd out
+          sha256sum vmlinuz-aarch64 docker-rootfs-arm64.img.gz | tee "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish VM assets release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: dockerdroid-vm-assets
+          name: DockerDroid VM Assets
+          prerelease: true
+          body: |
+            Guest kernel + Docker-enabled arm64 rootfs for the on-device VM backend.
+            Pin the SHA-256 sums (see the run summary) into app/.../vm/VmImages.kt.
+            The QEMU engine binary is built/shipped separately — see docs/VM.md.
+          files: |
+            out/vmlinuz-aarch64
+            out/docker-rootfs-arm64.img.gz
