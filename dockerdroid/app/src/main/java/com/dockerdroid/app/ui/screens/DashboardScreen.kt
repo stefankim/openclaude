@@ -23,7 +23,11 @@ import com.dockerdroid.app.data.remote.Connection
 import com.dockerdroid.app.ui.viewmodel.DashboardViewModel
 
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel) {
+fun DashboardScreen(
+    viewModel: DashboardViewModel,
+    onOpenNetworks: () -> Unit = {},
+    onOpenVolumes: () -> Unit = {},
+) {
     val daemon by viewModel.daemonState.collectAsState()
     val counts by viewModel.counts.collectAsState()
     val connection by viewModel.connection.collectAsState()
@@ -44,6 +48,11 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatCard("Containers", "${counts.running}/${counts.containers}", Modifier.weight(1f))
             StatCard("Images", counts.images.toString(), Modifier.weight(1f))
+        }
+        Spacer(Modifier.size(16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedButton(onClick = onOpenNetworks) { Text("Networks") }
+            OutlinedButton(onClick = onOpenVolumes) { Text("Volumes") }
         }
     }
 }

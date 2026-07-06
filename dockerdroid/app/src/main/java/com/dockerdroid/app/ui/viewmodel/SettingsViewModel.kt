@@ -17,7 +17,20 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
     val autoRestart: StateFlow<Boolean> = container.settingsRepository.autoRestart
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
+    val requireBiometric: StateFlow<Boolean> = container.settingsRepository.requireBiometric
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     val connection: StateFlow<Connection> = container.connectionManager.connection
+
+    fun setRequireBiometric(enabled: Boolean) = viewModelScope.launch {
+        container.settingsRepository.setRequireBiometric(enabled)
+    }
+
+    /** Export all saved stacks as a JSON string (written to a file by the UI). */
+    suspend fun exportBackup(): String = container.composeRepository.exportBackup()
+
+    /** Import stacks from a backup JSON string. Returns count imported. */
+    suspend fun importBackup(json: String): Int = container.composeRepository.importBackup(json)
 
     /** Drop the remote connection and talk to the on-device daemon again. */
     fun useLocal() = container.connectionManager.useLocal()

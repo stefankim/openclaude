@@ -22,9 +22,14 @@ import com.dockerdroid.app.data.remote.Connection
 import com.dockerdroid.app.ui.viewmodel.SettingsViewModel
 
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel) {
+fun SettingsScreen(
+    viewModel: SettingsViewModel,
+    onExportStacks: () -> Unit = {},
+    onImportStacks: () -> Unit = {},
+) {
     val startOnBoot by viewModel.startOnBoot.collectAsState()
     val autoRestart by viewModel.autoRestart.collectAsState()
+    val requireBiometric by viewModel.requireBiometric.collectAsState()
     val connection by viewModel.connection.collectAsState()
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
@@ -50,6 +55,19 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             checked = autoRestart,
             onChange = viewModel::setAutoRestart,
         )
+        HorizontalDivider()
+        SettingToggle(
+            title = "Require biometric unlock",
+            subtitle = "Confirm your identity before using stored SSH credentials.",
+            checked = requireBiometric,
+            onChange = viewModel::setRequireBiometric,
+        )
+        HorizontalDivider()
+        Text("Backup", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 12.dp))
+        Row {
+            OutlinedButton(onClick = onExportStacks) { Text("Export stacks") }
+            TextButton(onClick = onImportStacks) { Text("Import stacks") }
+        }
         HorizontalDivider()
         Text(
             "Docker Engine ${BinarySource.DOCKER_VERSION} · DockerDroid 0.1.0",

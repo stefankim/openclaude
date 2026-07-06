@@ -14,8 +14,13 @@ class ComposeParser {
 
     class ComposeParseException(message: String) : Exception(message)
 
-    fun parse(yaml: String): ComposeFile {
-        val root = parseBlock(yaml.lines().filter { it.isNotBlank() && !it.trimStart().startsWith("#") }, 0).first
+    /**
+     * @param variables values for `${VAR}` / `$VAR` interpolation (from a .env file
+     *   or the deploy dialog). Supports `${VAR:-default}` and `${VAR-default}`.
+     */
+    fun parse(yaml: String, variables: Map<String, String> = emptyMap()): ComposeFile {
+        val interpolated = interpolate(yaml, variables)
+        val root = parseBlock(interpolated.lines().filter { it.isNotBlank() && !it.trimStart().startsWith("#") }, 0).first
         @Suppress("UNCHECKED_CAST")
         val servicesNode = root["services"] as? Map<String, Any>
             ?: throw ComposeParseException("No 'services:' section found")
@@ -30,6 +35,19 @@ class ComposeParser {
             volumes = (root["volumes"] as? Map<*, *>)?.keys?.map { it.toString() } ?: emptyList(),
             networks = (root["networks"] as? Map<*, *>)?.keys?.map { it.toString() } ?: emptyList(),
         )
+    }
+
+    /** Substitute `${VAR}`, `${VAR:-default}`, `${VAR-default}`, and bare `$VAR`. */
+    private fun interpolate(yaml: String, vars: Map<String, String>): String {
+        val braced = Regex("\\$\\{([A-Za-z_][A-Za-z0-9_]*)(?::?-([^}]*))?}")
+        val bare = Regex("\\$([A-Za-z_][A-Za-z0-9_]*)")
+        var out = braced.replace(yaml) { m ->
+            val name = m.groupValues[1]
+            val default = m.groupValues[2]
+            vars[name] ?: default
+        }
+        out = bare.replace(out) { m -> vars[m.groupValues[1]] ?: m.value }
+        return out
     }
 
     private fun parseService(name: String, body: Map<String, Any>): ComposeService =

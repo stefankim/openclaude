@@ -5,6 +5,59 @@ import com.squareup.moshi.JsonClass
 
 /** Subset of the Docker Engine API responses DockerDroid consumes. */
 
+/** `GET /containers/{id}/json` — inspect. */
+@JsonClass(generateAdapter = true)
+data class ApiContainerInspect(
+    @Json(name = "Id") val id: String,
+    @Json(name = "Name") val name: String = "",
+    @Json(name = "Config") val config: InspectConfig? = null,
+    @Json(name = "State") val state: InspectState? = null,
+    @Json(name = "Mounts") val mounts: List<InspectMount> = emptyList(),
+)
+
+@JsonClass(generateAdapter = true)
+data class InspectConfig(
+    @Json(name = "Image") val image: String = "",
+    @Json(name = "Env") val env: List<String> = emptyList(),
+    @Json(name = "Cmd") val cmd: List<String>? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class InspectState(
+    @Json(name = "Status") val status: String = "",
+    @Json(name = "Running") val running: Boolean = false,
+    @Json(name = "StartedAt") val startedAt: String = "",
+    @Json(name = "ExitCode") val exitCode: Int = 0,
+)
+
+@JsonClass(generateAdapter = true)
+data class InspectMount(
+    @Json(name = "Type") val type: String = "",
+    @Json(name = "Source") val source: String = "",
+    @Json(name = "Destination") val destination: String = "",
+)
+
+/** Request body for `POST /containers/{id}/exec`. */
+@JsonClass(generateAdapter = true)
+data class ExecCreateRequest(
+    @Json(name = "AttachStdout") val attachStdout: Boolean = true,
+    @Json(name = "AttachStderr") val attachStderr: Boolean = true,
+    @Json(name = "Tty") val tty: Boolean = false,
+    @Json(name = "Cmd") val cmd: List<String>,
+)
+
+@JsonClass(generateAdapter = true)
+data class ExecCreateResponse(@Json(name = "Id") val id: String)
+
+@JsonClass(generateAdapter = true)
+data class CreateVolumeRequest(@Json(name = "Name") val name: String)
+
+@JsonClass(generateAdapter = true)
+data class CreateNetworkRequest(
+    @Json(name = "Name") val name: String,
+    @Json(name = "Driver") val driver: String = "bridge",
+)
+
 @JsonClass(generateAdapter = true)
 data class ApiImage(
     @Json(name = "Id") val id: String,

@@ -34,12 +34,21 @@ class ImagesViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             runCatching {
                 container.api.pullImage(reference).collect { line ->
-                    _state.value = _state.value.copy(pullStatus = line)
+                    _state.value = _state.value.copy(pullStatus = summarize(line))
                 }
             }.onFailure { _state.value = _state.value.copy(error = it.message) }
-            _state.value = _state.value.copy(pulling = false)
+            _state.value = _state.value.copy(pulling = false, pullStatus = "")
+            container.notifications.notify("Pull finished", reference)
             refresh()
         }
+    }
+
+    /** Turn a raw pull-progress JSON event into a compact human status. */
+    private fun summarize(json: String): String {
+        val status = Regex("\"status\"\\s*:\\s*\"([^\"]*)\"").find(json)?.groupValues?.get(1)
+        val id = Regex("\"id\"\\s*:\\s*\"([^\"]*)\"").find(json)?.groupValues?.get(1)
+        val progress = Regex("\"progress\"\\s*:\\s*\"([^\"]*)\"").find(json)?.groupValues?.get(1)
+        return listOfNotNull(status, id?.let { "[$it]" }, progress).joinToString(" ").ifBlank { json }
     }
 
     fun remove(id: String) {

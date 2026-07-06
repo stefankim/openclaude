@@ -16,6 +16,9 @@ interface ComposeProjectDao {
     @Query("SELECT * FROM compose_projects ORDER BY updatedAt DESC")
     fun observeAll(): Flow<List<ComposeProjectEntity>>
 
+    @Query("SELECT * FROM compose_projects ORDER BY updatedAt DESC")
+    suspend fun getAllOnce(): List<ComposeProjectEntity>
+
     @Query("SELECT * FROM compose_projects WHERE id = :id")
     suspend fun byId(id: Long): ComposeProjectEntity?
 

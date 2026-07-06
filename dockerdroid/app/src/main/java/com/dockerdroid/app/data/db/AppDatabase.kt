@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
 import com.dockerdroid.app.data.db.dao.ComposeProjectDao
 import com.dockerdroid.app.data.db.dao.DeployedContainerDao
 import com.dockerdroid.app.data.db.dao.EventLogDao
@@ -26,9 +27,9 @@ class Converters {
         EventLogEntity::class,
     ],
     version = 1,
-    // Schema export requires the Room Gradle plugin + a schema dir; disabled until
-    // the first stable release wires pinned migrations.
-    exportSchema = false,
+    // Schemas are exported to app/schemas (see build.gradle ksp room.schemaLocation)
+    // so version-to-version migrations can be reviewed and tested.
+    exportSchema = true,
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -39,12 +40,18 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         @Volatile private var instance: AppDatabase? = null
 
+        /**
+         * Pinned migrations. Empty at v1; add a [Migration] here (never bump the
+         * version without one) instead of destroying user data on upgrade.
+         */
+        val MIGRATIONS: Array<Migration> = emptyArray()
+
         fun get(context: Context): AppDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(
                 context.applicationContext,
                 AppDatabase::class.java,
                 "dockerdroid.db",
-            ).fallbackToDestructiveMigration().build().also { instance = it }
+            ).addMigrations(*MIGRATIONS).build().also { instance = it }
         }
     }
 }

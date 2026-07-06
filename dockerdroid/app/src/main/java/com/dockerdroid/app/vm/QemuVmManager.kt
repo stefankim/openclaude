@@ -71,19 +71,25 @@ class QemuVmManager(
     private suspend fun launchQemu(qemu: File) = withContext(Dispatchers.IO) {
         val kernel = provisioner.file("vmlinuz")
         val rootfs = provisioner.file("rootfs.img")
-        val args = listOf(
-            qemu.absolutePath,
-            "-machine", "virt",
-            "-cpu", "max",
-            "-smp", VmImages.GUEST_CPUS.toString(),
-            "-m", VmImages.GUEST_MEM_MB.toString(),
-            "-kernel", kernel.absolutePath,
-            "-drive", "file=${rootfs.absolutePath},if=virtio,format=raw",
-            "-append", "console=ttyAMA0 root=/dev/vda rw quiet",
-            "-netdev", "user,id=n0,hostfwd=tcp:127.0.0.1:${VmImages.DOCKER_PORT}-:${VmImages.DOCKER_PORT}",
-            "-device", "virtio-net-pci,netdev=n0",
-            "-nographic",
-        )
+        // Hardware acceleration where the kernel exposes /dev/kvm (GrapheneOS, some
+        // ROMs, AVF-capable devices) — otherwise fall back to slow software TCG.
+        val kvm = kvmAvailable()
+        _log.value = _log.value + if (kvm) "[dockerdroid] KVM available: hardware acceleration"
+        else "[dockerdroid] no /dev/kvm: software emulation (slow)"
+        val args = buildList {
+            add(qemu.absolutePath)
+            add("-machine"); add(if (kvm) "virt,accel=kvm" else "virt")
+            add("-cpu"); add(if (kvm) "host" else "max")
+            if (kvm) { add("-accel"); add("kvm") }
+            add("-smp"); add(VmImages.GUEST_CPUS.toString())
+            add("-m"); add(VmImages.GUEST_MEM_MB.toString())
+            add("-kernel"); add(kernel.absolutePath)
+            add("-drive"); add("file=${rootfs.absolutePath},if=virtio,format=raw")
+            add("-append"); add("console=ttyAMA0 root=/dev/vda rw quiet")
+            add("-netdev"); add("user,id=n0,hostfwd=tcp:127.0.0.1:${VmImages.DOCKER_PORT}-:${VmImages.DOCKER_PORT}")
+            add("-device"); add("virtio-net-pci,netdev=n0")
+            add("-nographic")
+        }
         val proc = ProcessBuilder(args)
             .directory(provisioner.dir())
             .redirectErrorStream(true)
@@ -119,6 +125,9 @@ class QemuVmManager(
         process = null
         _state.value = VmState.Stopped
     }
+
+    /** True if the host kernel exposes an accessible /dev/kvm (fast virtualization). */
+    fun kvmAvailable(): Boolean = File("/dev/kvm").let { it.exists() && it.canWrite() }
 
     private companion object {
         const val BOOT_WAIT_TRIES = 60 // ~2 min; software emulation boots slowly

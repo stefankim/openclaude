@@ -15,11 +15,18 @@ data class RemoteHost(
     /**
      * Command run on the remote that proxies stdin/stdout to the Docker socket.
      * The default works with Docker Desktop / Engine in the user's PATH; override
-     * with an absolute path (e.g. `/usr/local/bin/docker system dial-stdio`) when
+     * with an absolute path (e.g. `/opt/homebrew/bin/docker system dial-stdio`) when
      * a non-interactive SSH session has a minimal PATH.
      */
-    val dialCommand: String = "docker system dial-stdio",
-)
+    val dialCommand: String = DEFAULT_DIAL,
+) {
+    /** Stable identifier used as the storage key for multiple saved hosts. */
+    val id: String get() = "$username@$host:$port"
+
+    companion object {
+        const val DEFAULT_DIAL = "docker system dial-stdio"
+    }
+}
 
 /** How DockerDroid authenticates to the SSH host. */
 sealed interface SshAuth {

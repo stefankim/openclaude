@@ -37,6 +37,29 @@ class ComposeRepository(
         return projectDao.upsert(ComposeProjectEntity(name = name, yaml = yaml))
     }
 
+    /** Serialize all saved stacks (name + YAML) to a portable JSON backup. */
+    suspend fun exportBackup(): String {
+        val arr = org.json.JSONArray()
+        projectDao.getAllOnce().forEach { p ->
+            arr.put(org.json.JSONObject().put("name", p.name).put("yaml", p.yaml))
+        }
+        return org.json.JSONObject().put("version", 1).put("stacks", arr).toString(2)
+    }
+
+    /** Restore stacks from an [exportBackup] JSON. Returns the number imported. */
+    suspend fun importBackup(json: String): Int {
+        val stacks = org.json.JSONObject(json).optJSONArray("stacks") ?: return 0
+        var count = 0
+        for (i in 0 until stacks.length()) {
+            val o = stacks.getJSONObject(i)
+            val yaml = o.optString("yaml")
+            if (yaml.isNotBlank()) {
+                runCatching { import(o.optString("name", "stack"), yaml) }.onSuccess { count++ }
+            }
+        }
+        return count
+    }
+
     /** Deploy every service in a stack. Returns true if all containers started. */
     suspend fun deploy(projectId: Long): Boolean {
         val project = projectDao.byId(projectId) ?: return false

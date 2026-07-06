@@ -20,6 +20,14 @@ class ContainersViewModel(private val container: AppContainer) : ViewModel() {
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
 
+    init {
+        // Refresh instantly on any container lifecycle event instead of polling.
+        container.eventsMonitor.start()
+        viewModelScope.launch {
+            container.eventsMonitor.events.collect { refresh() }
+        }
+    }
+
     fun refresh() {
         _state.value = _state.value.copy(loading = true)
         viewModelScope.launch {

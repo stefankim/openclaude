@@ -59,11 +59,45 @@ jobs:
             gradle wrapper --gradle-version 8.10
           fi
 
-      - name: Build debug APK
+      # If a base64 keystore secret is configured, decode it and write
+      # keystore.properties so the release build is signed. Otherwise fall back to
+      # the debug-signed APK (still installable).
+      - name: Configure release signing (if secrets present)
+        id: signing
+        env:
+          KEYSTORE_B64: ${{ secrets.DOCKERDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.DOCKERDROID_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.DOCKERDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.DOCKERDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEY_ALIAS" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/dockerdroid.jks"
+            {
+              echo "DOCKERDROID_STORE_FILE=$RUNNER_TEMP/dockerdroid.jks"
+              echo "DOCKERDROID_STORE_PASSWORD=$STORE_PASSWORD"
+              echo "DOCKERDROID_KEY_ALIAS=$KEY_ALIAS"
+              echo "DOCKERDROID_KEY_PASSWORD=$KEY_PASSWORD"
+            } > keystore.properties
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build signed release APK
+        if: steps.signing.outputs.signed == 'true'
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Build debug APK (fallback)
+        if: steps.signing.outputs.signed != 'true'
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Stage APK with a stable name
-        run: cp app/build/outputs/apk/debug/app-debug.apk dockerdroid-debug.apk
+        run: |
+          if [ "${{ steps.signing.outputs.signed }}" = "true" ]; then
+            cp app/build/outputs/apk/release/app-release.apk dockerdroid-debug.apk
+          else
+            cp app/build/outputs/apk/debug/app-debug.apk dockerdroid-debug.apk
+          fi
 
       - name: Resolve release tag
         id: meta

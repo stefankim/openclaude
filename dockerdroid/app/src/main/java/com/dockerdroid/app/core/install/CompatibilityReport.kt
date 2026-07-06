@@ -1,7 +1,14 @@
 package com.dockerdroid.app.core.install
 
 /** Severity of a single compatibility finding. */
-enum class CheckStatus { PASS, WARN, FAIL }
+enum class CheckStatus {
+    PASS,
+    WARN,
+    FAIL,
+
+    /** Could not be probed (e.g. root not yet granted), so the result is not known. */
+    UNKNOWN,
+}
 
 /**
  * One probed kernel/userspace capability.

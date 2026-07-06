@@ -1,9 +1,23 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
 }
+
+// Release signing is configured from -P properties or environment variables so no
+// secrets live in the repo. When absent (e.g. local dev), the release build stays
+// unsigned and CI falls back to the debug-signed APK.
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun secret(key: String): String? =
+    (keystoreProps.getProperty(key) ?: System.getenv(key))?.takeIf { it.isNotBlank() }
+val hasReleaseSigning =
+    secret("DOCKERDROID_STORE_FILE") != null && secret("DOCKERDROID_KEY_ALIAS") != null
 
 android {
     namespace = "com.dockerdroid.app"
@@ -25,6 +39,17 @@ android {
         }
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(secret("DOCKERDROID_STORE_FILE")!!)
+                storePassword = secret("DOCKERDROID_STORE_PASSWORD")
+                keyAlias = secret("DOCKERDROID_KEY_ALIAS")
+                keyPassword = secret("DOCKERDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -33,6 +58,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            // Use the release keystore when provided; otherwise leave unsigned.
+            if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
         }
         debug {
             applicationIdSuffix = ".debug"
@@ -68,6 +95,11 @@ android {
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
+}
+
+// Export Room schemas so migrations can be reviewed and tested across versions.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {

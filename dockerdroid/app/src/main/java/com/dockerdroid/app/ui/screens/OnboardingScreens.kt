@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -118,6 +119,7 @@ private fun CheckRow(check: CompatibilityCheck) {
         CheckStatus.PASS -> Icons.Filled.CheckCircle to Color(0xFF2E7D32)
         CheckStatus.WARN -> Icons.Filled.Warning to Color(0xFFF9A825)
         CheckStatus.FAIL -> Icons.Filled.Error to MaterialTheme.colorScheme.error
+        CheckStatus.UNKNOWN -> Icons.Filled.HelpOutline to MaterialTheme.colorScheme.outline
     }
     Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, contentDescription = check.status.name, tint = tint)

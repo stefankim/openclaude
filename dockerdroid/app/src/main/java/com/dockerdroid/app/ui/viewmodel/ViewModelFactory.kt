@@ -18,6 +18,10 @@ class ViewModelFactory(private val container: AppContainer) : ViewModelProvider.
         modelClass.isAssignableFrom(ImagesViewModel::class.java) -> ImagesViewModel(container)
         modelClass.isAssignableFrom(ComposeViewModel::class.java) -> ComposeViewModel(container)
         modelClass.isAssignableFrom(SettingsViewModel::class.java) -> SettingsViewModel(container)
+        modelClass.isAssignableFrom(ContainerDetailViewModel::class.java) -> ContainerDetailViewModel(container)
+        modelClass.isAssignableFrom(NetworksViewModel::class.java) -> NetworksViewModel(container)
+        modelClass.isAssignableFrom(VolumesViewModel::class.java) -> VolumesViewModel(container)
+        modelClass.isAssignableFrom(ImageBuildViewModel::class.java) -> ImageBuildViewModel(container)
         else -> error("Unknown ViewModel: ${modelClass.name}")
     } as T
 }

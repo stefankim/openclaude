@@ -2,6 +2,7 @@ package com.dockerdroid.app.data.api
 
 import com.dockerdroid.app.core.install.InstallManager.Paths
 import com.dockerdroid.app.data.api.models.ApiContainer
+import com.dockerdroid.app.data.api.models.ApiContainerInspect
 import com.dockerdroid.app.data.api.models.ApiImage
 import com.dockerdroid.app.data.api.models.ApiNetwork
 import com.dockerdroid.app.data.api.models.ApiStats
@@ -9,6 +10,10 @@ import com.dockerdroid.app.data.api.models.ApiVolume
 import com.dockerdroid.app.data.api.models.ApiVolumeList
 import com.dockerdroid.app.data.api.models.CreateContainerRequest
 import com.dockerdroid.app.data.api.models.CreateContainerResponse
+import com.dockerdroid.app.data.api.models.CreateNetworkRequest
+import com.dockerdroid.app.data.api.models.CreateVolumeRequest
+import com.dockerdroid.app.data.api.models.ExecCreateRequest
+import com.dockerdroid.app.data.api.models.ExecCreateResponse
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -92,10 +97,54 @@ class DockerApiClient private constructor(
     suspend fun stats(id: String): ApiStats =
         fromJson(get("/containers/$id/stats?stream=false"), ApiStats::class.java)
 
+    suspend fun inspectContainer(id: String): ApiContainerInspect =
+        fromJson(get("/containers/$id/json"), ApiContainerInspect::class.java)
+
+    /**
+     * Run a one-shot command in a running container (`docker exec`). Returns the
+     * combined stdout/stderr; multiplexed frame headers are stripped best-effort.
+     */
+    suspend fun exec(id: String, cmd: List<String>): String {
+        val created = fromJson(
+            post("/containers/$id/exec", toJson(ExecCreateRequest(cmd = cmd), ExecCreateRequest::class.java)),
+            ExecCreateResponse::class.java,
+        )
+        val body = """{"Detach":false,"Tty":false}"""
+        val raw = post("/exec/${created.id}/start", body)
+        // Strip Docker's 8-byte stream multiplexing headers if present.
+        return raw.replace(Regex("[\\x00-\\x08\\x0e-\\x1f]"), "")
+    }
+
+    // ---- Events -----------------------------------------------------------
+
+    /** Stream daemon events (container start/stop/die, etc.) as raw JSON lines. */
+    fun events(): Flow<String> = streamGet("/events")
+
+    // ---- Build ------------------------------------------------------------
+
+    /** Build an image from a tar'd context, streaming build output line by line. */
+    fun buildImage(contextTar: ByteArray, tag: String): Flow<String> = flow {
+        val req = Request.Builder()
+            .url("$base/build?t=$tag")
+            .post(contextTar.toRequestBody("application/x-tar".toMediaType()))
+            .build()
+        client.newCall(req).execute().use { resp ->
+            val source = resp.body?.source() ?: return@use
+            while (!source.exhausted()) {
+                val line = source.readUtf8Line() ?: break
+                if (line.isNotEmpty()) emit(line)
+            }
+        }
+    }.flowOn(Dispatchers.IO)
+
     // ---- Volumes ----------------------------------------------------------
 
     suspend fun listVolumes(): List<ApiVolume> =
         fromJson(get("/volumes"), ApiVolumeList::class.java).volumes ?: emptyList()
+
+    suspend fun createVolume(name: String): Boolean =
+        runCatching { post("/volumes/create", toJson(CreateVolumeRequest(name), CreateVolumeRequest::class.java)) }
+            .isSuccess
 
     suspend fun removeVolume(name: String): Boolean = delete("/volumes/$name")
 
@@ -103,6 +152,10 @@ class DockerApiClient private constructor(
 
     suspend fun listNetworks(): List<ApiNetwork> =
         getList("/networks", ApiNetwork::class.java)
+
+    suspend fun createNetwork(name: String): Boolean =
+        runCatching { post("/networks/create", toJson(CreateNetworkRequest(name), CreateNetworkRequest::class.java)) }
+            .isSuccess
 
     suspend fun removeNetwork(id: String): Boolean = delete("/networks/$id")
 

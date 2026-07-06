@@ -9,16 +9,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -48,6 +53,41 @@ fun RemoteConnectScreen(viewModel: RemoteViewModel, onConnected: () -> Unit) {
             style = MaterialTheme.typography.bodySmall,
         )
 
+        // One-tap reconnect to previously saved hosts.
+        if (viewModel.savedHosts.isNotEmpty()) {
+            Text("Saved hosts", style = MaterialTheme.typography.titleSmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                viewModel.savedHosts.forEach { host ->
+                    AssistChip(
+                        onClick = { viewModel.connectSaved(host) },
+                        label = { Text(host.label) },
+                    )
+                }
+            }
+        }
+
+        // Hosts discovered on the LAN via mDNS.
+        val discovered by viewModel.discovered.collectAsState()
+        if (discovered.isNotEmpty()) {
+            Text("Found on your network", style = MaterialTheme.typography.titleSmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                discovered.forEach { h ->
+                    AssistChip(onClick = { viewModel.useDiscovered(h) }, label = { Text(h.name) })
+                }
+            }
+        }
+
+        // Pairing code: paste a dockerdroid:// URI (e.g. from a QR the host printed).
+        var pairing by remember { mutableStateOf("") }
+        OutlinedTextField(
+            value = pairing,
+            onValueChange = { pairing = it },
+            label = { Text("Paste pairing code (dockerdroid://…)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        TextButton(onClick = { viewModel.applyPairingUri(pairing) }) { Text("Apply pairing code") }
+
         OutlinedTextField(
             value = state.host,
             onValueChange = { v -> viewModel.update { it.copy(host = v) } },
@@ -69,6 +109,16 @@ fun RemoteConnectScreen(viewModel: RemoteViewModel, onConnected: () -> Unit) {
             label = { Text("SSH username") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
+        )
+        OutlinedTextField(
+            value = state.dialCommand,
+            onValueChange = { v -> viewModel.update { it.copy(dialCommand = v) } },
+            label = { Text("Docker dial command (advanced)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            supportingText = {
+                Text("If \"docker: command not found\", use an absolute path, e.g. /opt/homebrew/bin/docker system dial-stdio")
+            },
         )
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

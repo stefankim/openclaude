@@ -13,8 +13,25 @@ import com.dockerdroid.app.core.shell.RootShellManager
 class CompatibilityChecker(private val shell: RootShellManager) {
 
     suspend fun run(): CompatibilityReport {
+        val root = checkRoot()
+        // Without a root shell every kernel probe returns empty output, which would
+        // otherwise read as a wall of false failures. Report them as UNKNOWN instead
+        // and let the user grant root and re-check.
+        if (root.status != CheckStatus.PASS) {
+            val checks = buildList {
+                add(root)
+                add(unknown("arch", "CPU architecture"))
+                add(unknown("storage", "Free storage"))
+                add(unknown("cgroups", "Control groups"))
+                add(unknown("namespaces", "Namespaces"))
+                add(unknown("overlayfs", "Storage driver"))
+                add(unknown("netfilter", "Networking"))
+                add(unknown("selinux", "SELinux"))
+            }
+            return CompatibilityReport(checks, CompatibilityReport.Runtime.UNSUPPORTED)
+        }
         val checks = buildList {
-            add(checkRoot())
+            add(root)
             add(checkArchitecture())
             add(checkStorage())
             add(checkCgroups())
@@ -51,14 +68,17 @@ class CompatibilityChecker(private val shell: RootShellManager) {
 
     private suspend fun checkStorage(): CompatibilityCheck {
         // Available MiB on the data partition.
-        val freeMib = shell.exec("df -m /data | awk 'NR==2 {print \$4}'").out.trim().toLongOrNull() ?: 0
+        val freeMib = shell.exec("df -m /data | awk 'NR==2 {print \$4}'").out.trim().toLongOrNull()
+        if (freeMib == null) {
+            return CompatibilityCheck("storage", "Free storage", CheckStatus.UNKNOWN, "Could not read /data")
+        }
         val ok = freeMib >= MIN_FREE_MIB
         return CompatibilityCheck(
             key = "storage",
             label = "Free storage",
             status = if (ok) CheckStatus.PASS else CheckStatus.WARN,
-            detail = "${freeMib} MiB free on /data",
-            remedy = "At least ${MIN_FREE_MIB} MiB recommended for images.".takeIf { !ok },
+            detail = "$freeMib MiB free on /data",
+            remedy = "At least $MIN_FREE_MIB MiB recommended for images.".takeIf { !ok },
         )
     }
 
@@ -106,12 +126,16 @@ class CompatibilityChecker(private val shell: RootShellManager) {
 
     private suspend fun checkSeLinux(): CompatibilityCheck {
         val mode = shell.exec("getenforce").out.trim()
-        return if (mode.equals("Enforcing", ignoreCase = true)) {
-            CompatibilityCheck("selinux", "SELinux", CheckStatus.WARN, "Enforcing", "Per-container SELinux labels are not applied.")
-        } else {
-            pass("selinux", "SELinux", mode.ifBlank { "Permissive" })
+        return when {
+            mode.isBlank() -> CompatibilityCheck("selinux", "SELinux", CheckStatus.UNKNOWN, "Could not read mode")
+            mode.equals("Enforcing", ignoreCase = true) ->
+                CompatibilityCheck("selinux", "SELinux", CheckStatus.WARN, "Enforcing", "Per-container SELinux labels are not applied.")
+            else -> pass("selinux", "SELinux", mode)
         }
     }
+
+    private fun unknown(key: String, label: String) =
+        CompatibilityCheck(key, label, CheckStatus.UNKNOWN, "Grant root and re-check")
 
     private fun decideRuntime(checks: List<CompatibilityCheck>): CompatibilityReport.Runtime {
         fun status(key: String) = checks.first { it.key == key }.status

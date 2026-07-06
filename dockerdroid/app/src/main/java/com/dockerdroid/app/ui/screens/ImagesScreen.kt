@@ -28,12 +28,13 @@ import androidx.compose.ui.unit.dp
 import com.dockerdroid.app.ui.viewmodel.ImagesViewModel
 
 @Composable
-fun ImagesScreen(viewModel: ImagesViewModel) {
+fun ImagesScreen(viewModel: ImagesViewModel, onBuild: () -> Unit = {}) {
     val state by viewModel.state.collectAsState()
     var reference by remember { mutableStateOf("") }
     LaunchedEffect(Unit) { viewModel.refresh() }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
+        TextButton(onClick = onBuild) { Text("＋ Build image from Dockerfile") }
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
                 value = reference,

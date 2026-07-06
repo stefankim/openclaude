@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import java.io.File
 
 /** Which Docker daemon the active [DockerApiClient] targets. */
 sealed interface Connection {
@@ -22,13 +23,14 @@ sealed interface Connection {
 
 /**
  * Single source of truth for which Docker daemon the app is talking to. Holds the
- * active [DockerApiClient] and lets the UI switch between the on-device daemon and a
- * saved SSH host. Repositories and ViewModels read [client] on each call so a switch
- * takes effect immediately.
+ * active [DockerApiClient] and switches between the on-device daemon, a saved SSH
+ * host, and the on-device VM. Repositories/ViewModels read [client] on each call so
+ * a switch takes effect immediately.
  */
 class ConnectionManager(context: Context) {
 
     private val store = RemoteHostStore(context)
+    private val knownHostsPath = File(context.filesDir, "known_hosts").absolutePath
 
     @Volatile
     private var sshConnection: SshDockerConnection? = null
@@ -40,8 +42,11 @@ class ConnectionManager(context: Context) {
     private val _connection = MutableStateFlow<Connection>(Connection.Local)
     val connection: StateFlow<Connection> = _connection.asStateFlow()
 
-    /** A previously saved remote host, if any (credentials stay in the store). */
-    fun savedHost(): RemoteHost? = store.load()?.first
+    /** All saved remote hosts (credentials stay in the encrypted store). */
+    fun savedHosts(): List<RemoteHost> = store.listHosts()
+
+    /** The most recently used remote host, if any. */
+    fun savedHost(): RemoteHost? = store.loadLastUsed()?.first
 
     /**
      * Open an SSH connection, verify the Docker API answers, and make it active.
@@ -50,7 +55,7 @@ class ConnectionManager(context: Context) {
     suspend fun connectRemote(host: RemoteHost, auth: SshAuth): Result<Unit> =
         withContext(Dispatchers.IO) {
             runCatching {
-                val conn = SshDockerConnection(host, auth)
+                val conn = SshDockerConnection(host, auth, knownHostsPath)
                 conn.connect()
                 val candidate = DockerApiClient.remote(conn.newClient())
                 check(candidate.ping()) { "Connected over SSH, but the Docker API did not respond." }
@@ -63,9 +68,17 @@ class ConnectionManager(context: Context) {
             }
         }
 
-    /** Reconnect to a previously saved host (e.g. on app launch). */
+    /** Connect to a previously saved host by id. */
+    suspend fun connectSaved(id: String): Result<Unit> {
+        val host = store.loadHost(id) ?: return Result.failure(IllegalStateException("Unknown host"))
+        val auth = store.loadAuth(id) ?: return Result.failure(IllegalStateException("No credentials"))
+        return connectRemote(host, auth)
+    }
+
+    /** Reconnect to the most recently used host (e.g. on app launch). */
     suspend fun reconnectSaved(): Result<Unit> {
-        val (host, auth) = store.load() ?: return Result.failure(IllegalStateException("No saved host"))
+        val (host, auth) = store.loadLastUsed()
+            ?: return Result.failure(IllegalStateException("No saved host"))
         return connectRemote(host, auth)
     }
 
@@ -88,10 +101,11 @@ class ConnectionManager(context: Context) {
         _connection.value = Connection.Local
     }
 
-    /** Forget the saved remote host and its credentials. */
-    fun forgetRemote() {
-        store.clear()
-        useLocal()
+    /** Forget a specific saved host (defaults to the active/most-recent one). */
+    fun forgetRemote(id: String? = null) {
+        val target = id ?: (_connection.value as? Connection.Remote)?.host?.id ?: store.loadLastUsed()?.first?.id
+        if (target != null) store.delete(target)
+        if (_connection.value is Connection.Remote) useLocal()
     }
 
     private companion object {
