@@ -37,7 +37,9 @@ fun WeatherSceneView(
     scene: WeatherScene,
     isDay: Boolean,
     modifier: Modifier = Modifier,
-    windKmh: Double = 0.0
+    windKmh: Double = 0.0,
+    /** Particle-density multiplier from settings: 0.5 (calm) / 1.0 (normal) / 1.5 (vivid). */
+    intensity: Float = 1f
 ) {
     val transition = rememberInfiniteTransition(label = "weather")
 
@@ -68,16 +70,19 @@ fun WeatherSceneView(
 
     // Stable random seeds for particles so they don't jump each recomposition.
     val rng = remember(scene, isDay) { Random(scene.ordinal * 31 + if (isDay) 1 else 0) }
-    // rain: x, phase, speed, length
-    val rainSeeds = remember(scene, isDay) {
-        List(80) { listOf(rng.nextFloat(), rng.nextFloat(), 0.7f + rng.nextFloat() * 0.6f, 0.7f + rng.nextFloat() * 0.7f) }
+    // rain: x, phase, speed, length. Oversized pools; intensity picks how many are drawn.
+    val rainPool = remember(scene, isDay) {
+        List(120) { listOf(rng.nextFloat(), rng.nextFloat(), 0.7f + rng.nextFloat() * 0.6f, 0.7f + rng.nextFloat() * 0.7f) }
     }
     val splashSeeds = remember(scene, isDay) { List(7) { rng.nextFloat() to rng.nextFloat() } }
     // snow: x, phase, speed, size
-    val snowSeeds = remember(scene, isDay) {
-        List(60) { listOf(rng.nextFloat(), rng.nextFloat(), 0.5f + rng.nextFloat(), 0.5f + rng.nextFloat()) }
+    val snowPool = remember(scene, isDay) {
+        List(90) { listOf(rng.nextFloat(), rng.nextFloat(), 0.5f + rng.nextFloat(), 0.5f + rng.nextFloat()) }
     }
-    val starSeeds = remember(scene, isDay) { List(46) { Triple(rng.nextFloat(), rng.nextFloat(), rng.nextFloat()) } }
+    val starPool = remember(scene, isDay) { List(70) { Triple(rng.nextFloat(), rng.nextFloat(), rng.nextFloat()) } }
+    val rainSeeds = rainPool.take((80 * intensity).toInt().coerceIn(20, rainPool.size))
+    val snowSeeds = snowPool.take((60 * intensity).toInt().coerceIn(15, snowPool.size))
+    val starSeeds = starPool.take((46 * intensity).toInt().coerceIn(15, starPool.size))
     // wind streaks: y, phase, length, speed
     val windSeeds = remember(scene, isDay) {
         List(9) { listOf(0.12f + rng.nextFloat() * 0.7f, rng.nextFloat(), 0.5f + rng.nextFloat() * 0.5f, 0.7f + rng.nextFloat() * 0.6f) }

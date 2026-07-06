@@ -1,26 +1,56 @@
 package com.openclaude.weather.data.repository
 
+import android.content.Context
 import com.openclaude.weather.data.local.SavedLocation
+import com.openclaude.weather.data.remote.ForecastResponse
 import com.openclaude.weather.data.remote.GeoResult
 import com.openclaude.weather.data.remote.Network
 import com.openclaude.weather.data.remote.RadarFrame
+import com.openclaude.weather.domain.AirQuality
 import com.openclaude.weather.domain.CurrentWeather
 import com.openclaude.weather.domain.DayPoint
 import com.openclaude.weather.domain.Forecast
 import com.openclaude.weather.domain.HourPoint
+import com.openclaude.weather.domain.MinutePoint
+import com.openclaude.weather.domain.WeatherAlert
+import com.openclaude.weather.util.MeteoAlarmParser
 import com.openclaude.weather.util.WeatherCode
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 
 /** Coordinates remote weather/geocoding/radar sources and maps them to domain models. */
-class WeatherRepository {
+class WeatherRepository(private val appContext: Context) {
 
     private val weatherApi = Network.weatherApi
     private val geocodingApi = Network.geocodingApi
     private val rainViewerApi = Network.rainViewerApi
+    private val airQualityApi = Network.airQualityApi
+    private val feedApi = Network.feedApi
+
+    private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+    private val forecastAdapter = moshi.adapter(ForecastResponse::class.java)
 
     private val cache = mutableMapOf<String, Forecast>()
     private val cacheTtlMillis = 10 * 60 * 1000L
+
+    // ---- Forecast (with disk cache for instant/offline starts) ----
+
+    private fun cacheFile(locationId: String, model: String): File =
+        File(appContext.filesDir, "forecast_${locationId.replace('/', '_')}_$model.json")
+
+    /** Last successfully fetched forecast from disk, any age. Null if none cached. */
+    suspend fun cachedForecast(location: SavedLocation, model: String): Forecast? =
+        withContext(Dispatchers.IO) {
+            val f = cacheFile(location.id, model)
+            if (!f.exists()) return@withContext null
+            runCatching {
+                val dto = forecastAdapter.fromJson(f.readText()) ?: return@withContext null
+                mapForecast(dto, fetchedAt = f.lastModified())
+            }.getOrNull()
+        }
 
     suspend fun forecast(
         location: SavedLocation,
@@ -35,7 +65,8 @@ class WeatherRepository {
             return@withContext cached
         }
         val dto = weatherApi.forecast(location.latitude, location.longitude, models = model)
-        val mapped = mapForecast(dto)
+        runCatching { cacheFile(location.id, model).writeText(forecastAdapter.toJson(dto)) }
+        val mapped = mapForecast(dto, fetchedAt = System.currentTimeMillis())
         cache[key] = mapped
         mapped
     }
@@ -44,6 +75,89 @@ class WeatherRepository {
         if (query.isBlank()) emptyList()
         else geocodingApi.search(query.trim()).results ?: emptyList()
     }
+
+    // ---- Air quality + pollen ----
+
+    suspend fun airQuality(location: SavedLocation): AirQuality = withContext(Dispatchers.IO) {
+        val c = airQualityApi.current(location.latitude, location.longitude).current
+        AirQuality(
+            europeanAqi = c?.europeanAqi,
+            pm25 = c?.pm25,
+            pm10 = c?.pm10,
+            alderPollen = c?.alderPollen,
+            birchPollen = c?.birchPollen,
+            grassPollen = c?.grassPollen
+        )
+    }
+
+    // ---- Official warnings (MeteoAlarm) ----
+
+    private var alertsCache: Pair<String, List<WeatherAlert>>? = null
+    private var alertsCacheAt = 0L
+
+    suspend fun alerts(location: SavedLocation): List<WeatherAlert> = withContext(Dispatchers.IO) {
+        val url = MeteoAlarmParser.feedUrlFor(location.country) ?: return@withContext emptyList()
+        alertsCache?.let { (cachedUrl, list) ->
+            if (cachedUrl == url && System.currentTimeMillis() - alertsCacheAt < cacheTtlMillis) {
+                return@withContext list
+            }
+        }
+        val list = runCatching {
+            MeteoAlarmParser.parse(feedApi.fetch(url).string())
+        }.getOrDefault(emptyList())
+        alertsCache = url to list
+        alertsCacheAt = System.currentTimeMillis()
+        list
+    }
+
+    // ---- Saved-place previews (bulk current conditions) ----
+
+    data class PlacePreview(val temperatureC: Double, val weatherCode: Int, val isDay: Boolean)
+
+    suspend fun placePreviews(locations: List<SavedLocation>): Map<String, PlacePreview> =
+        withContext(Dispatchers.IO) {
+            if (locations.isEmpty()) return@withContext emptyMap()
+            // With a single coordinate the API returns an object, not an array; duplicating
+            // the coordinate keeps the response shape consistent.
+            val effective = if (locations.size == 1) locations + locations else locations
+            val lats = effective.joinToString(",") { "%.4f".format(it.latitude) }
+            val lons = effective.joinToString(",") { "%.4f".format(it.longitude) }
+            val resp = weatherApi.bulkCurrent(lats, lons)
+            buildMap {
+                locations.forEachIndexed { i, loc ->
+                    val cur = resp.getOrNull(i)?.current ?: return@forEachIndexed
+                    put(
+                        loc.id,
+                        PlacePreview(
+                            temperatureC = cur.temperature ?: return@forEachIndexed,
+                            weatherCode = cur.weatherCode ?: 3,
+                            isDay = (cur.isDay ?: 1) == 1
+                        )
+                    )
+                }
+            }
+        }
+
+    // ---- Model comparison ----
+
+    data class ModelDaily(val model: String, val days: List<Long>, val tMax: List<Double?>, val tMin: List<Double?>)
+
+    suspend fun compareModels(location: SavedLocation, models: List<String>): List<ModelDaily> =
+        withContext(Dispatchers.IO) {
+            models.mapNotNull { model ->
+                runCatching {
+                    val d = weatherApi.dailyOnly(location.latitude, location.longitude, models = model).daily
+                    ModelDaily(
+                        model = model,
+                        days = d?.time ?: emptyList(),
+                        tMax = d?.tempMax?.map { it } ?: emptyList(),
+                        tMin = d?.tempMin?.map { it } ?: emptyList()
+                    )
+                }.getOrNull()
+            }
+        }
+
+    // ---- Native precipitation forecast grid ----
 
     /** One grid cell of the native precipitation forecast (precip in mm/h per hour index). */
     data class PrecipCell(val lat: Double, val lon: Double, val precip: List<Double>)
@@ -64,17 +178,17 @@ class WeatherRepository {
 
     /**
      * Builds a native, fully-licensed precipitation forecast grid (Open-Meteo, CC-BY)
-     * centred on the given point — a free alternative to the Windy embed.
+     * centred on the given point. [fine] halves the cell size (used when zoomed in).
      */
-    suspend fun precipForecast(centerLat: Double, centerLon: Double): PrecipGrid =
+    suspend fun precipForecast(centerLat: Double, centerLon: Double, fine: Boolean = false): PrecipGrid =
         withContext(Dispatchers.IO) {
-            val key = "%.2f,%.2f".format(centerLat, centerLon)
+            val key = "%.2f,%.2f,%b".format(centerLat, centerLon, fine)
             precipCache[key]?.let { return@withContext it }
 
             val rows = 16
             val cols = 18
-            val latStep = 0.22
-            val lonStep = 0.34
+            val latStep = if (fine) 0.11 else 0.22
+            val lonStep = if (fine) 0.17 else 0.34
             val lats = ArrayList<String>(rows * cols)
             val lons = ArrayList<String>(rows * cols)
             for (r in 0 until rows) {
@@ -112,7 +226,7 @@ class WeatherRepository {
         )
     }
 
-    private fun mapForecast(dto: com.openclaude.weather.data.remote.ForecastResponse): Forecast {
+    private fun mapForecast(dto: ForecastResponse, fetchedAt: Long): Forecast {
         val c = dto.current
         val daily = dto.daily
         val isDayNow = (c?.isDay ?: 1) == 1
@@ -131,6 +245,13 @@ class WeatherRepository {
             sunsetEpoch = daily?.sunset?.firstOrNull()
         )
 
+        val minutely = buildList {
+            val m = dto.minutely15 ?: return@buildList
+            for (i in m.time.indices) {
+                add(MinutePoint(m.time[i], m.precipitation.getOrNull(i) ?: 0.0))
+            }
+        }
+
         val hourly = buildList {
             val h = dto.hourly ?: return@buildList
             val n = h.time.size
@@ -142,6 +263,8 @@ class WeatherRepository {
                         temperatureC = h.temperature.getOrNull(i) ?: 0.0,
                         condition = WeatherCode.map(h.weatherCode.getOrNull(i) ?: 3, isDay),
                         precipitationProbabilityPct = h.precipProbability.getOrNull(i) ?: 0,
+                        precipitationMm = h.precipitation.getOrNull(i) ?: 0.0,
+                        humidityPct = h.humidity.getOrNull(i) ?: 0,
                         windSpeedKmh = h.windSpeed.getOrNull(i) ?: 0.0,
                         isDay = isDay
                     )
@@ -172,11 +295,12 @@ class WeatherRepository {
 
         return Forecast(
             current = current,
+            minutely = minutely,
             hourly = hourly,
             daily = days,
             timezone = dto.timezone ?: "auto",
             utcOffsetSeconds = dto.utcOffsetSeconds ?: 0L,
-            fetchedAtMillis = System.currentTimeMillis()
+            fetchedAtMillis = fetchedAt
         )
     }
 }

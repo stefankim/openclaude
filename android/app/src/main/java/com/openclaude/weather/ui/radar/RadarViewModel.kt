@@ -36,17 +36,20 @@ class RadarViewModel(private val repository: WeatherRepository) : ViewModel() {
     init { load() }
 
     /** Loads the native precipitation forecast grid centred on the given point (cached). */
-    fun loadForecast(lat: Double, lon: Double) {
-        val key = "%.2f,%.2f".format(lat, lon)
+    fun loadForecast(lat: Double, lon: Double, fine: Boolean = false) {
+        val key = "%.2f,%.2f,%b".format(lat, lon, fine)
         if (key == lastForecastKey && _forecast.value.grid != null) return
         lastForecastKey = key
-        _forecast.value = PrecipForecastState(loading = true)
+        // Keep showing the previous grid while the finer/coarser one loads.
+        _forecast.value = _forecast.value.copy(loading = _forecast.value.grid == null, error = null)
         viewModelScope.launch {
-            runCatching { repository.precipForecast(lat, lon) }
+            runCatching { repository.precipForecast(lat, lon, fine) }
                 .onSuccess { _forecast.value = PrecipForecastState(grid = it) }
                 .onFailure {
                     lastForecastKey = null
-                    _forecast.value = PrecipForecastState(error = it.message ?: "Forecast unavailable")
+                    if (_forecast.value.grid == null) {
+                        _forecast.value = PrecipForecastState(error = it.message ?: "Forecast unavailable")
+                    }
                 }
         }
     }

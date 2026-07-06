@@ -36,6 +36,42 @@ class LocationStore(private val context: Context) {
         context.dataStore.edit { it[keyModel] = model }
     }
 
+    // ---- Settings ----
+
+    private val keyTempUnit = stringPreferencesKey("temp_unit")       // C | F
+    private val keyWindUnit = stringPreferencesKey("wind_unit")       // kmh | ms | mph
+    private val keyAnim = stringPreferencesKey("anim_intensity")       // low | normal | high
+    private val keyNotifMorning = stringPreferencesKey("notif_morning") // "1"/"0"
+    private val keyNotifRain = stringPreferencesKey("notif_rain")
+    private val keyNotifAlerts = stringPreferencesKey("notif_alerts")
+
+    data class Settings(
+        val tempUnit: String = "C",
+        val windUnit: String = "kmh",
+        val animIntensity: String = "normal",
+        val notifMorning: Boolean = false,
+        val notifRain: Boolean = false,
+        val notifAlerts: Boolean = true
+    )
+
+    val settings: Flow<Settings> = context.dataStore.data.map { p ->
+        Settings(
+            tempUnit = p[keyTempUnit] ?: "C",
+            windUnit = p[keyWindUnit] ?: "kmh",
+            animIntensity = p[keyAnim] ?: "normal",
+            notifMorning = p[keyNotifMorning] == "1",
+            notifRain = p[keyNotifRain] == "1",
+            notifAlerts = (p[keyNotifAlerts] ?: "1") == "1"
+        )
+    }
+
+    suspend fun setTempUnit(v: String) = context.dataStore.edit { it[keyTempUnit] = v }
+    suspend fun setWindUnit(v: String) = context.dataStore.edit { it[keyWindUnit] = v }
+    suspend fun setAnimIntensity(v: String) = context.dataStore.edit { it[keyAnim] = v }
+    suspend fun setNotifMorning(v: Boolean) = context.dataStore.edit { it[keyNotifMorning] = if (v) "1" else "0" }
+    suspend fun setNotifRain(v: Boolean) = context.dataStore.edit { it[keyNotifRain] = if (v) "1" else "0" }
+    suspend fun setNotifAlerts(v: Boolean) = context.dataStore.edit { it[keyNotifAlerts] = if (v) "1" else "0" }
+
     suspend fun current(): List<SavedLocation> {
         var result: List<SavedLocation> = emptyList()
         context.dataStore.edit { prefs ->

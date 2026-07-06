@@ -7,7 +7,9 @@ import com.openclaude.weather.data.local.LocationStore
 import com.openclaude.weather.data.local.SavedLocation
 import com.openclaude.weather.data.remote.GeoResult
 import com.openclaude.weather.data.repository.WeatherRepository
+import com.openclaude.weather.domain.AirQuality
 import com.openclaude.weather.domain.Forecast
+import com.openclaude.weather.domain.WeatherAlert
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,6 +30,11 @@ data class SearchState(
     val results: List<GeoResult> = emptyList(),
     val loading: Boolean = false,
     val message: String? = null
+)
+
+data class CompareState(
+    val loading: Boolean = false,
+    val rows: List<WeatherRepository.ModelDaily> = emptyList()
 )
 
 class WeatherViewModel(
@@ -52,7 +59,23 @@ class WeatherViewModel(
     val model: StateFlow<String> =
         store.model.stateIn(viewModelScope, SharingStarted.Eagerly, "best_match")
 
+    val settings: StateFlow<LocationStore.Settings> =
+        store.settings.stateIn(viewModelScope, SharingStarted.Eagerly, LocationStore.Settings())
+
+    private val _air = MutableStateFlow<AirQuality?>(null)
+    val air: StateFlow<AirQuality?> = _air.asStateFlow()
+
+    private val _alerts = MutableStateFlow<List<WeatherAlert>>(emptyList())
+    val alerts: StateFlow<List<WeatherAlert>> = _alerts.asStateFlow()
+
+    private val _previews = MutableStateFlow<Map<String, WeatherRepository.PlacePreview>>(emptyMap())
+    val previews: StateFlow<Map<String, WeatherRepository.PlacePreview>> = _previews.asStateFlow()
+
+    private val _compare = MutableStateFlow(CompareState())
+    val compare: StateFlow<CompareState> = _compare.asStateFlow()
+
     private var lastLoadedKey: String? = null
+    private var lastPreviewKey: String? = null
 
     init {
         // Auto-load forecast whenever the selected location or model changes.
@@ -62,6 +85,17 @@ class WeatherViewModel(
                 if (loc != null && key != lastLoadedKey) {
                     lastLoadedKey = key
                     load(loc, force = false, model = m)
+                }
+            }
+        }
+        // Refresh saved-place previews when the list changes.
+        viewModelScope.launch {
+            locations.collect { list ->
+                val key = list.joinToString(";") { it.id }
+                if (list.isNotEmpty() && key != lastPreviewKey) {
+                    lastPreviewKey = key
+                    runCatching { repository.placePreviews(list) }
+                        .onSuccess { _previews.value = it }
                 }
             }
         }
@@ -76,12 +110,46 @@ class WeatherViewModel(
     }
 
     private fun load(location: SavedLocation, force: Boolean, model: String) = viewModelScope.launch {
-        _forecast.value = ForecastState.Loading
+        // Show cached data instantly (works offline), then refresh from the network.
+        val cached = if (!force) repository.cachedForecast(location, model) else null
+        _forecast.value = if (cached != null) ForecastState.Success(cached) else ForecastState.Loading
+
         runCatching { repository.forecast(location, force, model) }
             .onSuccess { _forecast.value = ForecastState.Success(it) }
             .onFailure {
-                _forecast.value = ForecastState.Error(it.message ?: "Could not load weather")
+                if (cached == null) {
+                    _forecast.value = ForecastState.Error(it.message ?: "Could not load weather")
+                } // else: keep showing the cached forecast (its timestamp shows staleness)
             }
+
+        launch {
+            runCatching { repository.airQuality(location) }
+                .onSuccess { _air.value = it }
+                .onFailure { _air.value = null }
+        }
+        launch {
+            runCatching { repository.alerts(location) }
+                .onSuccess { _alerts.value = it }
+                .onFailure { _alerts.value = emptyList() }
+        }
+    }
+
+    // ---- Settings ----
+
+    fun setTempUnit(v: String) = viewModelScope.launch { store.setTempUnit(v) }
+    fun setWindUnit(v: String) = viewModelScope.launch { store.setWindUnit(v) }
+    fun setAnimIntensity(v: String) = viewModelScope.launch { store.setAnimIntensity(v) }
+    fun setNotifMorning(v: Boolean) = viewModelScope.launch { store.setNotifMorning(v) }
+    fun setNotifRain(v: Boolean) = viewModelScope.launch { store.setNotifRain(v) }
+    fun setNotifAlerts(v: Boolean) = viewModelScope.launch { store.setNotifAlerts(v) }
+
+    fun loadCompare() = viewModelScope.launch {
+        val loc = selected.value ?: return@launch
+        _compare.value = CompareState(loading = true)
+        val rows = repository.compareModels(
+            loc, listOf("best_match", "ecmwf_ifs025", "icon_seamless", "gfs_seamless")
+        )
+        _compare.value = CompareState(rows = rows)
     }
 
     // ---- Location management ----
@@ -118,6 +186,30 @@ class WeatherViewModel(
             longitude = result.longitude,
             timezone = result.timezone
         )
+        addLocation(loc, onResult)
+        clearSearch()
+    }
+
+    /** Adds a location resolved from GPS (Places "use my location"). */
+    fun addManual(
+        name: String,
+        region: String?,
+        country: String?,
+        latitude: Double,
+        longitude: Double,
+        onResult: (Boolean, String) -> Unit
+    ) {
+        addLocation(
+            SavedLocation(
+                id = SavedLocation.idFor(latitude, longitude),
+                name = name, region = region, country = country,
+                latitude = latitude, longitude = longitude, timezone = null
+            ),
+            onResult
+        )
+    }
+
+    private fun addLocation(loc: SavedLocation, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch {
             val current = store.current()
             when {
@@ -128,13 +220,22 @@ class WeatherViewModel(
                 else -> {
                     val ok = store.add(loc)
                     onResult(ok, if (ok) "Added ${loc.name}" else "Could not add location")
-                    _search.value = SearchState()
                 }
             }
         }
     }
 
     fun remove(id: String) = viewModelScope.launch { store.remove(id) }
+
+    /** Moves a saved place one position up or down. */
+    fun move(id: String, up: Boolean) = viewModelScope.launch {
+        val list = locations.value.toMutableList()
+        val i = list.indexOfFirst { it.id == id }
+        val j = if (up) i - 1 else i + 1
+        if (i < 0 || j < 0 || j >= list.size) return@launch
+        val tmp = list[i]; list[i] = list[j]; list[j] = tmp
+        store.reorder(list)
+    }
 
     fun clearSearch() {
         _search.value = SearchState()

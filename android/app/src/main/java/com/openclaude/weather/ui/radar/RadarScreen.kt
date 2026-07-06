@@ -34,13 +34,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.openclaude.weather.R
 import com.openclaude.weather.data.local.SavedLocation
 import com.openclaude.weather.util.Format
 import kotlinx.coroutines.delay
+import org.osmdroid.events.DelayedMapListener
+import org.osmdroid.events.MapListener
+import org.osmdroid.events.ScrollEvent
+import org.osmdroid.events.ZoomEvent
 import org.osmdroid.tileprovider.MapTileProviderBasic
 import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -61,7 +67,9 @@ private class RainViewerTileSource(name: String, private val template: String) :
     }
 }
 
-private enum class RadarMode(val label: String) { LIVE("Live"), FORECAST("Forecast"), WINDY("Windy") }
+private enum class RadarMode(val labelRes: Int) {
+    LIVE(R.string.radar_live), FORECAST(R.string.radar_forecast), WINDY(R.string.radar_windy)
+}
 
 /** Coarser relative label for forecast hours, e.g. "now", "in 5 h", "in 2 days". */
 private fun relativeDayLabel(epochSeconds: Long): String {
@@ -92,7 +100,7 @@ fun RadarScreen(
     forecast: PrecipForecastState,
     location: SavedLocation?,
     onRetry: () -> Unit,
-    onLoadForecast: (Double, Double) -> Unit
+    onLoadForecast: (Double, Double, Boolean) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -103,11 +111,24 @@ fun RadarScreen(
     var playing by remember { mutableStateOf(true) }
     var mode by remember { mutableStateOf(RadarMode.LIVE) }
     var forecastHour by remember { mutableStateOf(0) }
+    var forecastPlaying by remember { mutableStateOf(false) }
+    var fineZoom by remember { mutableStateOf(false) }
 
-    // Load the native forecast grid when entering Forecast mode or changing location.
-    LaunchedEffect(mode, location?.id) {
+    // Load the native forecast grid when entering Forecast mode, changing location, or
+    // crossing the zoom threshold (finer grid when zoomed in).
+    LaunchedEffect(mode, location?.id, fineZoom) {
         if (mode == RadarMode.FORECAST && location != null) {
-            onLoadForecast(location.latitude, location.longitude)
+            onLoadForecast(location.latitude, location.longitude, fineZoom)
+        }
+    }
+
+    // Forecast autoplay: step through the hours while playing.
+    LaunchedEffect(forecastPlaying, mode, forecast.grid?.times?.size) {
+        val count = forecast.grid?.times?.size ?: return@LaunchedEffect
+        if (mode != RadarMode.FORECAST || count == 0) return@LaunchedEffect
+        while (forecastPlaying) {
+            delay(600)
+            forecastHour = (forecastHour + 1) % count
         }
     }
 
@@ -143,7 +164,22 @@ fun RadarScreen(
             isTilesScaledToDpi = true
         }
     }
-    var radarOverlay by remember { mutableStateOf<TilesOverlay?>(null) }
+    // Track zoom so the Forecast grid can switch to a finer resolution when zoomed in.
+    DisposableEffect(mapView) {
+        val listener = DelayedMapListener(object : MapListener {
+            override fun onZoom(event: ZoomEvent?): Boolean {
+                fineZoom = (event?.zoomLevel ?: 7.5) >= 8.2
+                return false
+            }
+            override fun onScroll(event: ScrollEvent?): Boolean = false
+        }, 300)
+        mapView.addMapListener(listener)
+        onDispose { mapView.removeMapListener(listener) }
+    }
+
+    // One overlay per RainViewer frame, kept alive so replays hit warm tile caches
+    // instead of stuttering through re-downloads. Rebuilt when a new frame set arrives.
+    val frameOverlays = remember(state.frames) { mutableMapOf<Long, TilesOverlay>() }
     val precipOverlay = remember { PrecipForecastOverlay() }
     val locationMarker = remember {
         Marker(mapView).apply {
@@ -178,22 +214,25 @@ fun RadarScreen(
                 update = { mv ->
                     when (mode) {
                         RadarMode.LIVE -> {
-                            // Observed RainViewer frames; remove the forecast overlay if present.
                             mv.overlays.remove(precipOverlay)
+                            // Drop overlays that belong to an outdated frame set.
+                            mv.overlays.removeAll { it is TilesOverlay && it !in frameOverlays.values }
                             val frame = state.frames.getOrNull(frameIndex) ?: return@AndroidView
-                            radarOverlay?.let { mv.overlays.remove(it) }
-                            val source = RainViewerTileSource("rainviewer-${frame.time}", frame.tileUrlTemplate)
-                            val provider = MapTileProviderBasic(mv.context, source)
-                            val overlay = TilesOverlay(provider, mv.context).apply {
-                                loadingBackgroundColor = AndroidColor.TRANSPARENT
-                                loadingLineColor = AndroidColor.TRANSPARENT
+                            // Lazily build one overlay per frame; keeping them alive means
+                            // each loop after the first plays from cached tiles (no stutter).
+                            val overlay = frameOverlays.getOrPut(frame.time) {
+                                val source = RainViewerTileSource("rainviewer-${frame.time}", frame.tileUrlTemplate)
+                                TilesOverlay(MapTileProviderBasic(mv.context, source), mv.context).apply {
+                                    loadingBackgroundColor = AndroidColor.TRANSPARENT
+                                    loadingLineColor = AndroidColor.TRANSPARENT
+                                }
                             }
-                            mv.overlays.add(0, overlay)
-                            radarOverlay = overlay
+                            if (!mv.overlays.contains(overlay)) mv.overlays.add(0, overlay)
+                            frameOverlays.values.forEach { it.setEnabled(it === overlay) }
                         }
                         RadarMode.FORECAST -> {
-                            // Native Open-Meteo precipitation cells; remove the RainViewer layer.
-                            radarOverlay?.let { mv.overlays.remove(it); radarOverlay = null }
+                            // Native Open-Meteo precipitation cells; hide the RainViewer layers.
+                            frameOverlays.values.forEach { it.setEnabled(false) }
                             precipOverlay.grid = forecast.grid
                             precipOverlay.hourIndex = forecastHour
                             if (!mv.overlays.contains(precipOverlay)) mv.overlays.add(0, precipOverlay)
@@ -215,16 +254,16 @@ fun RadarScreen(
                 .padding(horizontal = 12.dp, vertical = 6.dp)
         ) {
             Text(
-                text = "Storm & rain radar",
+                text = stringResource(R.string.storm_rain_radar),
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             )
             Text(
                 text = when (mode) {
-                    RadarMode.LIVE -> "Live · last 2 h + nowcast"
-                    RadarMode.FORECAST -> "Forecast · next 3 days (Open-Meteo)"
-                    RadarMode.WINDY -> "Forecast · Windy"
+                    RadarMode.LIVE -> stringResource(R.string.radar_live_sub)
+                    RadarMode.FORECAST -> stringResource(R.string.radar_forecast_sub)
+                    RadarMode.WINDY -> stringResource(R.string.radar_windy_sub)
                 },
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 11.sp
@@ -244,7 +283,7 @@ fun RadarScreen(
             RadarMode.entries.forEach { m ->
                 val selected = m == mode
                 Text(
-                    text = m.label,
+                    text = stringResource(m.labelRes),
                     color = if (selected) Color(0xFF0F172A) else Color.White,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -269,7 +308,7 @@ fun RadarScreen(
                 ) {
                     Text(state.error, color = Color.White)
                     Text(
-                        "Tap to retry",
+                        stringResource(R.string.tap_retry),
                         color = Color(0xFF9FD0FF),
                         modifier = Modifier.padding(8.dp).clip(RoundedCornerShape(8.dp)).clickable { onRetry() }
                     )
@@ -288,7 +327,7 @@ fun RadarScreen(
                     color = Color.White,
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .clickable { location?.let { onLoadForecast(it.latitude, it.longitude) } }
+                        .clickable { location?.let { onLoadForecast(it.latitude, it.longitude, fineZoom) } }
                 )
             }
 
@@ -304,19 +343,33 @@ fun RadarScreen(
                         .background(Color(0xCC0F172A))
                         .padding(horizontal = 12.dp, vertical = 10.dp)
                 ) {
-                    Text(
-                        time?.let { Format.localDayTime(it) } ?: "",
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        time?.let { relativeDayLabel(it) } ?: "",
-                        color = Color(0xFF9FD0FF),
-                        fontSize = 12.sp
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { forecastPlaying = !forecastPlaying }) {
+                            Icon(
+                                if (forecastPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                contentDescription = if (forecastPlaying) "Pause" else "Play",
+                                tint = Color.White
+                            )
+                        }
+                        Column {
+                            Text(
+                                time?.let { Format.localDayTime(it) } ?: "",
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                time?.let { relativeDayLabel(it) } ?: "",
+                                color = Color(0xFF9FD0FF),
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
                     Slider(
                         value = forecastHour.toFloat(),
-                        onValueChange = { forecastHour = it.toInt().coerceIn(0, grid.times.lastIndex) },
+                        onValueChange = {
+                            forecastPlaying = false
+                            forecastHour = it.toInt().coerceIn(0, grid.times.lastIndex)
+                        },
                         valueRange = 0f..(grid.times.lastIndex.coerceAtLeast(1).toFloat()),
                         modifier = Modifier.fillMaxWidth()
                     )

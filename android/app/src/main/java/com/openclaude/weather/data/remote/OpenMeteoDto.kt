@@ -6,8 +6,14 @@ data class ForecastResponse(
     @Json(name = "timezone") val timezone: String?,
     @Json(name = "utc_offset_seconds") val utcOffsetSeconds: Long?,
     @Json(name = "current") val current: CurrentDto?,
+    @Json(name = "minutely_15") val minutely15: Minutely15Dto?,
     @Json(name = "hourly") val hourly: HourlyDto?,
     @Json(name = "daily") val daily: DailyDto?
+)
+
+data class Minutely15Dto(
+    @Json(name = "time") val time: List<Long> = emptyList(),
+    @Json(name = "precipitation") val precipitation: List<Double?> = emptyList()
 )
 
 data class CurrentDto(
@@ -28,6 +34,8 @@ data class HourlyDto(
     @Json(name = "temperature_2m") val temperature: List<Double> = emptyList(),
     @Json(name = "weather_code") val weatherCode: List<Int> = emptyList(),
     @Json(name = "precipitation_probability") val precipProbability: List<Int?> = emptyList(),
+    @Json(name = "precipitation") val precipitation: List<Double?> = emptyList(),
+    @Json(name = "relative_humidity_2m") val humidity: List<Int?> = emptyList(),
     @Json(name = "wind_speed_10m") val windSpeed: List<Double> = emptyList(),
     @Json(name = "is_day") val isDay: List<Int> = emptyList()
 )
@@ -83,6 +91,29 @@ data class SatelliteFrames(
 data class RadarFrame(
     @Json(name = "time") val time: Long,
     @Json(name = "path") val path: String
+)
+
+// ---- Air quality + pollen ----
+
+data class AirQualityResponse(
+    @Json(name = "current") val current: AirQualityCurrent?
+)
+
+data class AirQualityCurrent(
+    @Json(name = "european_aqi") val europeanAqi: Int?,
+    @Json(name = "pm2_5") val pm25: Double?,
+    @Json(name = "pm10") val pm10: Double?,
+    @Json(name = "alder_pollen") val alderPollen: Double?,
+    @Json(name = "birch_pollen") val birchPollen: Double?,
+    @Json(name = "grass_pollen") val grassPollen: Double?
+)
+
+// ---- Bulk current conditions (one element per coordinate; used for place previews) ----
+
+data class BulkCurrentResponse(
+    @Json(name = "latitude") val latitude: Double = 0.0,
+    @Json(name = "longitude") val longitude: Double = 0.0,
+    @Json(name = "current") val current: CurrentDto?
 )
 
 // ---- Precipitation forecast grid (one element per coordinate) ----

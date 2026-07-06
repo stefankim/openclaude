@@ -29,11 +29,12 @@ object Format {
     fun dayMonth(epochSeconds: Long, offsetSeconds: Long = 0): String =
         fmt("d MMM").format(Date((epochSeconds + offsetSeconds) * 1000))
 
-    fun temp(c: Double): String = "${Math.round(c)}°"
+    fun temp(c: Double): String = "${Math.round(Units.convertTemp(c))}°"
 
-    fun tempPrecise(c: Double): String = "${Math.round(c)}°C"
+    fun tempPrecise(c: Double): String = "${Math.round(Units.convertTemp(c))}°${Units.tempUnit}"
 
-    fun wind(kmh: Double): String = "${Math.round(kmh)} km/h"
+    fun wind(kmh: Double): String =
+        "${Math.round(Units.convertWind(kmh))} ${Units.windLabel()}"
 
     fun percent(p: Int): String = "$p%"
 

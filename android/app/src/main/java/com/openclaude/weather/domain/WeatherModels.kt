@@ -8,7 +8,8 @@ enum class WeatherScene {
 /** Result of mapping a WMO weather code. */
 data class WeatherCondition(
     val code: Int,
-    val label: String,
+    /** String resource id for the human-readable condition name (localizable). */
+    val labelRes: Int,
     val scene: WeatherScene,
     /** Material symbol name used by [WeatherIcon]. */
     val icon: String
@@ -34,8 +35,30 @@ data class HourPoint(
     val temperatureC: Double,
     val condition: WeatherCondition,
     val precipitationProbabilityPct: Int,
+    val precipitationMm: Double,
+    val humidityPct: Int,
     val windSpeedKmh: Double,
     val isDay: Boolean
+)
+
+/** One 15-minute precipitation point (next ~2 h), for the "rain soon" strip. */
+data class MinutePoint(val epochSeconds: Long, val precipitationMm: Double)
+
+/** Official weather warning (MeteoAlarm / SHMU). */
+data class WeatherAlert(
+    val event: String,
+    val severity: String,
+    val area: String,
+    val expiresMillis: Long?
+)
+
+data class AirQuality(
+    val europeanAqi: Int?,
+    val pm25: Double?,
+    val pm10: Double?,
+    val alderPollen: Double?,
+    val birchPollen: Double?,
+    val grassPollen: Double?
 )
 
 data class DayPoint(
@@ -54,6 +77,7 @@ data class DayPoint(
 /** Full forecast for one place. */
 data class Forecast(
     val current: CurrentWeather,
+    val minutely: List<MinutePoint>,
     val hourly: List<HourPoint>,
     val daily: List<DayPoint>,
     val timezone: String,

@@ -2,4 +2,130 @@
     <string name="app_name">Weather &amp; Radar</string>
     <string name="widget_name">Weather &amp; Radar widget</string>
     <string name="widget_description">Live animated weather for your selected location.</string>
+
+    <!-- Tabs -->
+    <string name="tab_today">Today</string>
+    <string name="tab_week">Week</string>
+    <string name="tab_extended">Extended</string>
+    <string name="tab_radar">Radar</string>
+    <string name="tab_places">Places</string>
+
+    <!-- Today -->
+    <string name="now">now</string>
+    <string name="updated_at">Updated %s</string>
+    <string name="feels_like">Feels like %s</string>
+    <string name="hourly_forecast">Hourly forecast</string>
+    <string name="temperature_24h">Temperature · next 24 h</string>
+    <string name="details">Details</string>
+    <string name="today">Today</string>
+    <string name="wind">Wind</string>
+    <string name="humidity">Humidity</string>
+    <string name="uv">UV</string>
+    <string name="pressure">Pressure</string>
+    <string name="precipitation">Precipitation</string>
+    <string name="sunrise">Sunrise</string>
+    <string name="sunset">Sunset</string>
+    <string name="rain_starting">Rain expected around %s</string>
+    <string name="no_rain_soon">No rain expected in the next 2 hours</string>
+    <string name="air_quality">Air quality</string>
+    <string name="aqi_good">Good</string>
+    <string name="aqi_fair">Fair</string>
+    <string name="aqi_moderate">Moderate</string>
+    <string name="aqi_poor">Poor</string>
+    <string name="aqi_very_poor">Very poor</string>
+    <string name="aqi_extreme">Extremely poor</string>
+    <string name="pollen_grass">Grass</string>
+    <string name="pollen_birch">Birch</string>
+    <string name="pollen_alder">Alder</string>
+    <string name="warning_until">until %s</string>
+
+    <!-- Forecast lists -->
+    <string name="seven_day_forecast">7-day forecast</string>
+    <string name="extended_forecast">Extended forecast</string>
+
+    <!-- Radar -->
+    <string name="storm_rain_radar">Storm &amp; rain radar</string>
+    <string name="radar_live">Live</string>
+    <string name="radar_forecast">Forecast</string>
+    <string name="radar_windy">Windy</string>
+    <string name="radar_live_sub">Live · last 2 h + nowcast</string>
+    <string name="radar_forecast_sub">Forecast · next 3 days (Open-Meteo)</string>
+    <string name="radar_windy_sub">Forecast · Windy</string>
+    <string name="tap_retry">Tap to retry</string>
+
+    <!-- Places -->
+    <string name="search_city">Search a city…</string>
+    <string name="results">Results</string>
+    <string name="your_locations">Your locations</string>
+    <string name="no_locations">No locations yet. Search above to add up to %d.</string>
+    <string name="saved_count">%1$d/%2$d saved</string>
+    <string name="use_my_location">Use my location</string>
+    <string name="locating">Finding your location…</string>
+    <string name="location_permission_needed">Location permission is needed for this</string>
+    <string name="location_failed">Could not determine your location</string>
+    <string name="my_location">My location</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
+    <string name="add">Add</string>
+    <string name="remove">Remove</string>
+    <string name="selected">Selected</string>
+    <string name="add_location_title">Add a location to get started</string>
+    <string name="add_location_body">Tap the Places tab and search any city in Slovakia or worldwide.</string>
+
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="back">Back</string>
+    <string name="close">Close</string>
+    <string name="refresh">Refresh</string>
+    <string name="retry">Retry</string>
+    <string name="units">Units</string>
+    <string name="temperature">Temperature</string>
+    <string name="forecast_model">Forecast model</string>
+    <string name="model_hint">Different models forecast slightly different temperatures, especially days ahead. Auto picks the best regional model (with UV); others let you compare.</string>
+    <string name="compare_models">Compare models</string>
+    <string name="notifications">Notifications</string>
+    <string name="notif_morning">Morning forecast summary</string>
+    <string name="notif_rain">Warn me before rain</string>
+    <string name="notif_alerts">Official weather warnings</string>
+    <string name="animations">Animations</string>
+    <string name="anim_low">Calm</string>
+    <string name="anim_normal">Normal</string>
+    <string name="anim_high">Vivid</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel">Weather updates</string>
+    <string name="notif_morning_title">Today\'s weather</string>
+    <string name="notif_rain_title">Rain expected soon</string>
+    <string name="notif_rain_text">Rain is expected around %s</string>
+    <string name="notif_alert_title">Weather warning</string>
+
+    <!-- Widget config -->
+    <string name="widget_pick_location">Show weather for</string>
+    <string name="widget_follow_app">Follow app selection</string>
+
+    <!-- Weather conditions (WMO codes) -->
+    <string name="cond_clear">Clear sky</string>
+    <string name="cond_mostly_clear">Mostly clear</string>
+    <string name="cond_partly_cloudy">Partly cloudy</string>
+    <string name="cond_overcast">Overcast</string>
+    <string name="cond_fog">Fog</string>
+    <string name="cond_drizzle_light">Light drizzle</string>
+    <string name="cond_drizzle">Drizzle</string>
+    <string name="cond_drizzle_dense">Dense drizzle</string>
+    <string name="cond_freezing_drizzle">Freezing drizzle</string>
+    <string name="cond_rain_light">Light rain</string>
+    <string name="cond_rain">Rain</string>
+    <string name="cond_rain_heavy">Heavy rain</string>
+    <string name="cond_freezing_rain">Freezing rain</string>
+    <string name="cond_snow_light">Light snow</string>
+    <string name="cond_snow">Snow</string>
+    <string name="cond_snow_heavy">Heavy snow</string>
+    <string name="cond_snow_grains">Snow grains</string>
+    <string name="cond_showers_light">Light showers</string>
+    <string name="cond_showers">Showers</string>
+    <string name="cond_showers_violent">Violent showers</string>
+    <string name="cond_snow_showers">Snow showers</string>
+    <string name="cond_thunderstorm">Thunderstorm</string>
+    <string name="cond_thunderstorm_hail">Thunderstorm w/ hail</string>
+    <string name="cond_unknown">Unknown</string>
 </resources>

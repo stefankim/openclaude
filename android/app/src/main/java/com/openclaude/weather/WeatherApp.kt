@@ -4,11 +4,13 @@ import android.app.Application
 import android.content.Context
 import com.openclaude.weather.data.local.LocationStore
 import com.openclaude.weather.data.repository.WeatherRepository
+import com.openclaude.weather.notifications.ConditionsWorker
+import com.openclaude.weather.notifications.MorningWorker
 import org.osmdroid.config.Configuration
 
 /** Holds app-wide singletons. Lightweight manual DI — no Hilt needed. */
 class AppContainer(context: Context) {
-    val repository: WeatherRepository = WeatherRepository()
+    val repository: WeatherRepository = WeatherRepository(context.applicationContext)
     val locationStore: LocationStore = LocationStore(context.applicationContext)
 }
 
@@ -27,6 +29,10 @@ class WeatherApp : Application() {
             load(this@WeatherApp, getSharedPreferences("osmdroid", MODE_PRIVATE))
             userAgentValue = packageName
         }
+
+        // Background workers check the user's toggles at run time and no-op when disabled.
+        ConditionsWorker.schedule(this)
+        MorningWorker.schedule(this)
     }
 
     companion object {

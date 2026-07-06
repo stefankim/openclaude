@@ -2,9 +2,11 @@ package com.openclaude.weather.widget
 
 import android.app.Service
 import android.appwidget.AppWidgetManager
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -41,9 +43,36 @@ class WeatherWidgetService : Service() {
         }
     }
 
+    // Pause the animation while the screen is off — no one can see it, so don't burn battery.
+    private val screenReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                Intent.ACTION_SCREEN_OFF -> {
+                    handler.removeCallbacks(tick)
+                    ticking = false
+                }
+                Intent.ACTION_SCREEN_ON, Intent.ACTION_USER_PRESENT -> {
+                    if (!ticking) {
+                        ticking = true
+                        handler.post(tick)
+                    }
+                }
+            }
+        }
+    }
+    private var receiverRegistered = false
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (!receiverRegistered) {
+            registerReceiver(screenReceiver, IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_OFF)
+                addAction(Intent.ACTION_SCREEN_ON)
+                addAction(Intent.ACTION_USER_PRESENT)
+            })
+            receiverRegistered = true
+        }
         when (intent?.action) {
             ACTION_REFRESH -> scope.launch { runCatching { WidgetUpdater.refresh(applicationContext) } }
         }
@@ -55,6 +84,10 @@ class WeatherWidgetService : Service() {
     }
 
     override fun onDestroy() {
+        if (receiverRegistered) {
+            runCatching { unregisterReceiver(screenReceiver) }
+            receiverRegistered = false
+        }
         handler.removeCallbacks(tick)
         scope.cancel()
         ticking = false

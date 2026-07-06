@@ -47,10 +47,13 @@ class WeatherWidgetProvider : AppWidgetProvider() {
 
         /** Renders the given [phase] of the animation onto every widget instance. */
         fun renderAll(context: Context, manager: AppWidgetManager, ids: IntArray, phase: Float) {
-            val snapshot = WidgetState.load(context)
             val density = context.resources.displayMetrics.density
 
             ids.forEach { id ->
+                // Each widget may be pinned to its own location (falls back to selected).
+                val locationKey = WidgetState.widgetLocation(context, id)
+                val snapshot = WidgetState.load(context, locationKey)
+                    ?: WidgetState.load(context, WidgetState.KEY_SELECTED)
                 val options = manager.getAppWidgetOptions(id)
                 val wDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250).coerceAtLeast(120)
                 val hDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 120).coerceAtLeast(80)

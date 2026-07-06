@@ -1,0 +1,122 @@
+<resources>
+    <string name="app_name">Počasie a radar</string>
+    <string name="widget_name">Widget Počasie a radar</string>
+    <string name="widget_description">Živé animované počasie pre vybranú lokalitu.</string>
+
+    <string name="tab_today">Dnes</string>
+    <string name="tab_week">Týždeň</string>
+    <string name="tab_extended">Dlhodobá</string>
+    <string name="tab_radar">Radar</string>
+    <string name="tab_places">Miesta</string>
+
+    <string name="now">teraz</string>
+    <string name="updated_at">Aktualizované %s</string>
+    <string name="feels_like">Pocitovo %s</string>
+    <string name="hourly_forecast">Hodinová predpoveď</string>
+    <string name="temperature_24h">Teplota · najbližších 24 h</string>
+    <string name="details">Podrobnosti</string>
+    <string name="today">Dnes</string>
+    <string name="wind">Vietor</string>
+    <string name="humidity">Vlhkosť</string>
+    <string name="uv">UV</string>
+    <string name="pressure">Tlak</string>
+    <string name="precipitation">Zrážky</string>
+    <string name="sunrise">Východ slnka</string>
+    <string name="sunset">Západ slnka</string>
+    <string name="rain_starting">Dážď sa očakáva okolo %s</string>
+    <string name="no_rain_soon">Najbližšie 2 hodiny sa dážď neočakáva</string>
+    <string name="air_quality">Kvalita ovzdušia</string>
+    <string name="aqi_good">Dobrá</string>
+    <string name="aqi_fair">Uspokojivá</string>
+    <string name="aqi_moderate">Mierna</string>
+    <string name="aqi_poor">Zlá</string>
+    <string name="aqi_very_poor">Veľmi zlá</string>
+    <string name="aqi_extreme">Mimoriadne zlá</string>
+    <string name="pollen_grass">Trávy</string>
+    <string name="pollen_birch">Breza</string>
+    <string name="pollen_alder">Jelša</string>
+    <string name="warning_until">do %s</string>
+
+    <string name="seven_day_forecast">7-dňová predpoveď</string>
+    <string name="extended_forecast">Dlhodobá predpoveď</string>
+
+    <string name="storm_rain_radar">Búrkový a dažďový radar</string>
+    <string name="radar_live">Živý</string>
+    <string name="radar_forecast">Predpoveď</string>
+    <string name="radar_windy">Windy</string>
+    <string name="radar_live_sub">Živý · posledné 2 h + nowcast</string>
+    <string name="radar_forecast_sub">Predpoveď · ďalšie 3 dni (Open-Meteo)</string>
+    <string name="radar_windy_sub">Predpoveď · Windy</string>
+    <string name="tap_retry">Ťuknutím skúsiť znova</string>
+
+    <string name="search_city">Hľadať mesto…</string>
+    <string name="results">Výsledky</string>
+    <string name="your_locations">Vaše lokality</string>
+    <string name="no_locations">Zatiaľ žiadne lokality. Vyhľadajte a pridajte až %d.</string>
+    <string name="saved_count">%1$d/%2$d uložených</string>
+    <string name="use_my_location">Použiť moju polohu</string>
+    <string name="locating">Zisťuje sa vaša poloha…</string>
+    <string name="location_permission_needed">Je potrebné povolenie na prístup k polohe</string>
+    <string name="location_failed">Nepodarilo sa zistiť vašu polohu</string>
+    <string name="my_location">Moja poloha</string>
+    <string name="move_up">Posunúť nahor</string>
+    <string name="move_down">Posunúť nadol</string>
+    <string name="add">Pridať</string>
+    <string name="remove">Odstrániť</string>
+    <string name="selected">Vybrané</string>
+    <string name="add_location_title">Začnite pridaním lokality</string>
+    <string name="add_location_body">Ťuknite na kartu Miesta a vyhľadajte ľubovoľné mesto na Slovensku alebo vo svete.</string>
+
+    <string name="settings">Nastavenia</string>
+    <string name="back">Späť</string>
+    <string name="close">Zavrieť</string>
+    <string name="refresh">Obnoviť</string>
+    <string name="retry">Skúsiť znova</string>
+    <string name="units">Jednotky</string>
+    <string name="temperature">Teplota</string>
+    <string name="forecast_model">Predpovedný model</string>
+    <string name="model_hint">Rôzne modely predpovedajú mierne odlišné teploty, najmä na dni dopredu. Auto vyberá najlepší regionálny model (s UV); ostatné umožňujú porovnanie.</string>
+    <string name="compare_models">Porovnať modely</string>
+    <string name="notifications">Upozornenia</string>
+    <string name="notif_morning">Ranné zhrnutie predpovede</string>
+    <string name="notif_rain">Upozorniť pred dažďom</string>
+    <string name="notif_alerts">Oficiálne výstrahy (SHMÚ)</string>
+    <string name="animations">Animácie</string>
+    <string name="anim_low">Pokojné</string>
+    <string name="anim_normal">Normálne</string>
+    <string name="anim_high">Výrazné</string>
+
+    <string name="notif_channel">Aktuality o počasí</string>
+    <string name="notif_morning_title">Dnešné počasie</string>
+    <string name="notif_rain_title">Čoskoro sa očakáva dážď</string>
+    <string name="notif_rain_text">Dážď sa očakáva okolo %s</string>
+    <string name="notif_alert_title">Výstraha pred počasím</string>
+
+    <string name="widget_pick_location">Zobraziť počasie pre</string>
+    <string name="widget_follow_app">Podľa výberu v aplikácii</string>
+
+    <string name="cond_clear">Jasno</string>
+    <string name="cond_mostly_clear">Prevažne jasno</string>
+    <string name="cond_partly_cloudy">Polooblačno</string>
+    <string name="cond_overcast">Zamračené</string>
+    <string name="cond_fog">Hmla</string>
+    <string name="cond_drizzle_light">Slabé mrholenie</string>
+    <string name="cond_drizzle">Mrholenie</string>
+    <string name="cond_drizzle_dense">Husté mrholenie</string>
+    <string name="cond_freezing_drizzle">Mrznúce mrholenie</string>
+    <string name="cond_rain_light">Slabý dážď</string>
+    <string name="cond_rain">Dážď</string>
+    <string name="cond_rain_heavy">Silný dážď</string>
+    <string name="cond_freezing_rain">Mrznúci dážď</string>
+    <string name="cond_snow_light">Slabé sneženie</string>
+    <string name="cond_snow">Sneženie</string>
+    <string name="cond_snow_heavy">Silné sneženie</string>
+    <string name="cond_snow_grains">Snehové zrná</string>
+    <string name="cond_showers_light">Slabé prehánky</string>
+    <string name="cond_showers">Prehánky</string>
+    <string name="cond_showers_violent">Prudké prehánky</string>
+    <string name="cond_snow_showers">Snehové prehánky</string>
+    <string name="cond_thunderstorm">Búrka</string>
+    <string name="cond_thunderstorm_hail">Búrka s krúpami</string>
+    <string name="cond_unknown">Neznáme</string>
+</resources>
