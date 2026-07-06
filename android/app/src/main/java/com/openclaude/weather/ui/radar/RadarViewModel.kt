@@ -60,10 +60,11 @@ class RadarViewModel(private val repository: WeatherRepository) : ViewModel() {
             runCatching { repository.radarFrames() }
                 .onSuccess { data ->
                     val frames = data.frames.mapIndexed { index, f ->
-                        // RainViewer tile template: host + path + /256/{z}/{x}/{y}/2/1_1.png
+                        // RainViewer tile template: host + path + /256/{z}/{x}/{y}/{scheme}/1_1.png
+                        // Scheme 8 (Dark Sky palette): saturated teal->dark blue, like TV radars.
                         RadarFrameUi(
                             time = f.time,
-                            tileUrlTemplate = "${data.host}${f.path}/256/%d/%d/%d/2/1_1.png",
+                            tileUrlTemplate = "${data.host}${f.path}/256/%d/%d/%d/8/1_1.png",
                             isForecast = index >= data.nowcastFrom
                         )
                     }

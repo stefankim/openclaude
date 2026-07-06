@@ -84,6 +84,9 @@ dependencies {
     // Home-screen widget (Glance for the static layout, classic RemoteViews for animation)
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
+    // Chrome Custom Tabs for the Windy radar (WebView can't render Windy's WebGL map)
+    implementation("androidx.browser:browser:1.8.0")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     testImplementation("junit:junit:4.13.2")

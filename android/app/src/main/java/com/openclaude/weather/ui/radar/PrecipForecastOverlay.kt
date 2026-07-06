@@ -84,26 +84,29 @@ class PrecipForecastOverlay : Overlay() {
     }
 
     companion object {
-        /** ARGB colour for a precipitation rate (mm/h); 0 (transparent) below threshold. */
+        /**
+         * ARGB colour for a precipitation rate (mm/h); 0 (transparent) below threshold.
+         * Dark teal->navy ramp like TV radars: light rain teal, heavy rain deep blue/violet.
+         */
         fun smoothColor(mmPerHour: Double): Int = when {
             mmPerHour < 0.08 -> 0
-            mmPerHour < 0.3 -> 0x553B82F0
-            mmPerHour < 0.7 -> 0x77317AF0
-            mmPerHour < 1.5 -> 0x9930B0E0.toInt()
-            mmPerHour < 3.0 -> 0xAA33C457.toInt()
-            mmPerHour < 6.0 -> 0xC0FFD23F.toInt()
-            mmPerHour < 12.0 -> 0xD0FF8C2B.toInt()
-            else -> 0xE0E53935.toInt()
+            mmPerHour < 0.3 -> 0x9950D2DC.toInt()  // pale teal
+            mmPerHour < 0.7 -> 0xB328B4C8.toInt()  // teal
+            mmPerHour < 1.5 -> 0xC61478B4.toInt()  // steel blue
+            mmPerHour < 3.0 -> 0xD20F468C.toInt()  // deep blue
+            mmPerHour < 6.0 -> 0xDC0A2864.toInt()  // navy
+            mmPerHour < 12.0 -> 0xE41E1450.toInt() // dark indigo
+            else -> 0xEC46145A.toInt()             // violet (extreme)
         }
 
         /** Opaque swatch colour for the legend. */
         fun legendColor(mmPerHour: Double): Int = when {
-            mmPerHour < 0.3 -> 0xFF3B82F0.toInt()
-            mmPerHour < 1.5 -> 0xFF30B0E0.toInt()
-            mmPerHour < 3.0 -> 0xFF33C457.toInt()
-            mmPerHour < 6.0 -> 0xFFFFD23F.toInt()
-            mmPerHour < 12.0 -> 0xFFFF8C2B.toInt()
-            else -> 0xFFE53935.toInt()
+            mmPerHour < 0.3 -> 0xFF50D2DC.toInt()
+            mmPerHour < 1.5 -> 0xFF1478B4.toInt()
+            mmPerHour < 3.0 -> 0xFF0F468C.toInt()
+            mmPerHour < 6.0 -> 0xFF0A2864.toInt()
+            mmPerHour < 12.0 -> 0xFF1E1450.toInt()
+            else -> 0xFF46145A.toInt()
         }
     }
 }
