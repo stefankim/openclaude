@@ -7,6 +7,7 @@ import com.openclaude.weather.data.repository.WeatherRepository
 import com.openclaude.weather.notifications.ConditionsWorker
 import com.openclaude.weather.notifications.MorningWorker
 import org.osmdroid.config.Configuration
+import java.io.File
 
 /** Holds app-wide singletons. Lightweight manual DI — no Hilt needed. */
 class AppContainer(context: Context) {
@@ -23,11 +24,17 @@ class WeatherApp : Application() {
         container = AppContainer(this)
         INSTANCE = this
 
-        // osmdroid must have a valid User-Agent before any MapView is created, otherwise
-        // the OpenStreetMap tile servers reject requests (HTTP 418) and the map stays blank.
+        // osmdroid must be configured before any MapView is created:
+        // - a valid User-Agent, or tile servers reject requests;
+        // - cache paths on INTERNAL storage. With scoped storage, osmdroid's default
+        //   cache location can be unwritable; its tile writer then fails to initialise
+        //   and every downloaded tile is silently dropped (blank placeholder grid).
         Configuration.getInstance().apply {
             load(this@WeatherApp, getSharedPreferences("osmdroid", MODE_PRIVATE))
             userAgentValue = packageName
+            osmdroidBasePath = File(filesDir, "osmdroid").apply { mkdirs() }
+            osmdroidTileCache = File(filesDir, "osmdroid/tiles").apply { mkdirs() }
+            save(this@WeatherApp, getSharedPreferences("osmdroid", MODE_PRIVATE))
         }
 
         // Background workers check the user's toggles at run time and no-op when disabled.
