@@ -226,7 +226,10 @@ class MainActivity : AppCompatActivity() {
         return Bitmap.createBitmap(raw, 0, 0, raw.width, raw.height, matrix, true)
     }
 
-    private fun identifyPlant(bitmap: Bitmap, apiKey: String) {
+    private fun appLanguage(): String =
+        if (java.util.Locale.getDefault().language == "sk") "sk" else "en"
+
+    private fun identifyPlant(bitmap: Bitmap, apiKey: String, lang: String = appLanguage()) {
         // Scale down to max 800px on longest side for faster upload
         val maxDim = 800f
         val scale = minOf(1f, maxDim / maxOf(bitmap.width, bitmap.height).toFloat())
@@ -254,7 +257,7 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         val request = Request.Builder()
-            .url("https://my-api.plantnet.org/v2/identify/all?api-key=$apiKey&lang=en&nb-results=3")
+            .url("https://my-api.plantnet.org/v2/identify/all?api-key=$apiKey&lang=$lang&nb-results=3")
             .post(body)
             .build()
 
@@ -282,6 +285,11 @@ class MainActivity : AppCompatActivity() {
                             R.string.plant_not_recognized,
                             Toast.LENGTH_LONG
                         ).show()
+                        // If a localized request fails (e.g. unsupported lang), retry in English
+                        lang != "en" -> {
+                            showLoading(true)
+                            identifyPlant(bitmap, apiKey, "en")
+                        }
                         else -> {
                             val detail = try {
                                 JsonParser.parseString(bodyStr).asJsonObject.get("message")?.asString
@@ -439,15 +447,29 @@ class MainActivity : AppCompatActivity() {
         descriptionText.visibility = View.VISIBLE
         learnMoreLink.visibility = View.GONE
 
-        fetchWikipediaSummary(commonName) { found ->
-            if (!found) fetchWikipediaSummary(scientificName) { foundFallback ->
-                if (!foundFallback) runOnUiThread { descriptionText.visibility = View.GONE }
-            }
+        // Try the app language's Wikipedia first, then fall back to English
+        val attempts = if (appLanguage() == "sk") listOf(
+            "sk" to commonName, "sk" to scientificName,
+            "en" to commonName, "en" to scientificName
+        ) else listOf(
+            "en" to commonName, "en" to scientificName
+        )
+        tryFetchDescription(attempts, 0)
+    }
+
+    private fun tryFetchDescription(attempts: List<Pair<String, String>>, index: Int) {
+        if (index >= attempts.size) {
+            runOnUiThread { descriptionText.visibility = View.GONE }
+            return
+        }
+        val (lang, title) = attempts[index]
+        fetchWikipediaSummary(lang, title) { found ->
+            if (!found) tryFetchDescription(attempts, index + 1)
         }
     }
 
-    private fun fetchWikipediaSummary(title: String, onDone: (Boolean) -> Unit) {
-        val url = "https://en.wikipedia.org/api/rest_v1/page/summary/" +
+    private fun fetchWikipediaSummary(lang: String, title: String, onDone: (Boolean) -> Unit) {
+        val url = "https://$lang.wikipedia.org/api/rest_v1/page/summary/" +
             Uri.encode(title.replace(" ", "_"))
         val request = Request.Builder()
             .url(url)
