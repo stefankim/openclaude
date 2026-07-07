@@ -49,10 +49,10 @@ import org.osmdroid.events.ScrollEvent
 import org.osmdroid.events.ZoomEvent
 import org.osmdroid.tileprovider.MapTileProviderBasic
 import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.util.MapTileIndex
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.TilesOverlay
 
@@ -64,6 +64,25 @@ private class RainViewerTileSource(name: String, private val template: String) :
         val x = MapTileIndex.getX(pMapTileIndex)
         val y = MapTileIndex.getY(pMapTileIndex)
         return String.format(template, zoom, x, y)
+    }
+}
+
+/**
+ * Base map: Esri Light Gray Canvas. OpenStreetMap's tile server frequently blocks mobile
+ * apps (tiles never load, leaving the blank placeholder grid); Esri's canvas tiles are
+ * app-friendly and their muted style makes the rain colours stand out like TV radars.
+ */
+private val EsriLightGray = object : OnlineTileSourceBase(
+    "EsriLightGray", 0, 16, 256, "",
+    arrayOf("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/"),
+    "© Esri — Esri, HERE, Garmin, © OpenStreetMap contributors"
+) {
+    override fun getTileURLString(pMapTileIndex: Long): String {
+        val zoom = MapTileIndex.getZoom(pMapTileIndex)
+        val x = MapTileIndex.getX(pMapTileIndex)
+        val y = MapTileIndex.getY(pMapTileIndex)
+        // Esri tile order is zoom/y/x.
+        return baseUrl + "$zoom/$y/$x"
     }
 }
 
@@ -157,11 +176,12 @@ fun RadarScreen(
 
     val mapView = remember {
         MapView(context).apply {
-            setTileSource(TileSourceFactory.MAPNIK)
+            setTileSource(EsriLightGray)
             setMultiTouchControls(true)
             controller.setZoom(7.5)
             isHorizontalMapRepetitionEnabled = false
             isTilesScaledToDpi = true
+            overlays.add(CopyrightOverlay(context))
         }
     }
     // Track zoom so the Forecast grid can switch to a finer resolution when zoomed in.
