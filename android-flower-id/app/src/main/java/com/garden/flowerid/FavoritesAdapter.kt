@@ -32,7 +32,9 @@ class FavoritesAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        holder.commonName.text = item.commonName
+        // Prefer the database name so it follows the current app language
+        val info = WeedDatabase.identify(item.scientificName)
+        holder.commonName.text = info?.commonName ?: item.commonName
         holder.scientificName.text = item.scientificName
 
         val bitmap = FavoritesStore.loadImage(holder.itemView.context, item.imageFileName)

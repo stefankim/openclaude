@@ -651,10 +651,70 @@ object WeedDatabase {
         ),
     )
 
+    // Slovak common names, keyed by lowercase genus
+    private val skNames = mapOf(
+        "taraxacum" to "Púpava",
+        "cirsium" to "Pichliač (bodliak)",
+        "convolvulus" to "Pupenec roľný",
+        "calystegia" to "Pupenec plotný",
+        "aegopodium" to "Kozia noha",
+        "stellaria" to "Hviezdica prostredná",
+        "plantago" to "Skorocel",
+        "rumex" to "Štiavec",
+        "ambrosia" to "Ambrózia palinolistá",
+        "digitaria" to "Prstovka",
+        "cyperus" to "Šachor",
+        "euphorbia" to "Mliečnik (prýštec)",
+        "chenopodium" to "Mrlík biely",
+        "reynoutria" to "Krídlatka japonská",
+        "fallopia" to "Krídlatka japonská",
+        "polygonum" to "Stavikrv",
+        "persicaria" to "Horčiak",
+        "oxalis" to "Kyslička (šťaveľ)",
+        "veronica" to "Veronika",
+        "cardamine" to "Žerušnica chlpatá",
+        "lamium" to "Hluchavka",
+        "galium" to "Lipkavec",
+        "senecio" to "Starček",
+        "sonchus" to "Mlieč",
+        "urtica" to "Pŕhľava (žihľava)",
+        "capsella" to "Kapsička pastierska",
+        "poa" to "Lipnica ročná",
+        "bromus" to "Stoklas",
+        "elytrigia" to "Pýr plazivý",
+        "elymus" to "Pýr plazivý",
+        "agrostis" to "Psinček",
+        "trifolium" to "Ďatelina",
+        "medicago" to "Lucerna",
+        "hieracium" to "Jastrabník",
+        "hypochaeris" to "Prasatník",
+        "leontodon" to "Púpavka",
+        "achillea" to "Rebríček",
+        "ranunculus" to "Iskerník plazivý",
+        "ficaria" to "Blyskáč jarný",
+        "geum" to "Kuklík mestský",
+        "lolium" to "Mätonoh",
+        "bellis" to "Sedmokráska",
+        "heracleum" to "Boľševník",
+        "equisetum" to "Praslička",
+        "glechoma" to "Zádušník brečtanovitý",
+        "alliaria" to "Cesnačka lekárska",
+        "anthriscus" to "Trebuľka lesná",
+        "epilobium" to "Vŕbovka",
+        "conyza" to "Turanec",
+        "amaranthus" to "Láskavec",
+        "portulaca" to "Portulaka zeleninová",
+        "setaria" to "Mohár",
+        "echinochloa" to "Ježatka kuria",
+        "mercurialis" to "Bažanka",
+    )
+
     fun identify(scientificName: String): WeedInfo? {
         val genus = scientificName.lowercase().trim().split(" ").firstOrNull() ?: return null
         val entry = weeds[genus] ?: return null
-        val texts = if (Locale.getDefault().language == "sk") entry.sk else entry.en
-        return WeedInfo(entry.commonName, texts.reason, texts.removal, entry.severity, texts.hazard)
+        val slovak = Locale.getDefault().language == "sk"
+        val texts = if (slovak) entry.sk else entry.en
+        val name = if (slovak) skNames[genus] ?: entry.commonName else entry.commonName
+        return WeedInfo(name, texts.reason, texts.removal, entry.severity, texts.hazard)
     }
 }

@@ -384,12 +384,15 @@ class MainActivity : AppCompatActivity() {
         confidence: Double,
         weedInfo: WeedDatabase.WeedInfo?
     ) {
+        // For known weeds prefer the database name (localized); otherwise use PlantNet's
+        val displayName = weedInfo?.commonName ?: commonName
+
         flowerImage.setImageBitmap(lastCapturedBitmap)
-        plantNameText.text = commonName
+        plantNameText.text = displayName
         scientificNameText.text = scientificName
         confidenceText.text = getString(R.string.confidence_format, confidence)
 
-        currentCommonName = commonName
+        currentCommonName = displayName
         currentScientificName = scientificName
         currentConfidence = confidence
         currentWeedInfo = weedInfo
