@@ -111,13 +111,19 @@ private fun DayRow(
     GlassCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.clickable { onToggle() }) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    if (isToday) stringResource(R.string.today) else Format.weekday(day.epochSeconds, tzOffset),
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 15.sp,
-                    modifier = Modifier.width(64.dp)
-                )
+                Column(modifier = Modifier.width(64.dp)) {
+                    Text(
+                        if (isToday) stringResource(R.string.today) else Format.weekday(day.epochSeconds, tzOffset),
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp
+                    )
+                    Text(
+                        Format.dayMonth(day.epochSeconds, tzOffset),
+                        color = Color.White.copy(alpha = 0.65f),
+                        fontSize = 11.sp
+                    )
+                }
                 WeatherGlyph(day.condition.scene, isDay = true, modifier = Modifier.size(34.dp))
                 Spacer(Modifier.width(8.dp))
                 if (day.precipitationProbabilityPct > 0) {
