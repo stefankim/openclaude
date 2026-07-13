@@ -224,10 +224,10 @@ fun RadarScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (mode == RadarMode.WINDY) {
-            // Multi-day forecast radar for Slovakia (Windy: blends radar + forecast model).
-            WindyRadarView(location = location, modifier = Modifier.fillMaxSize())
-        } else {
+        // The MapView must never leave the composition: removing and re-attaching the same
+        // View instance (e.g. after visiting the Windy mode) leaves it blank. The Windy
+        // launcher panel is drawn over the map instead.
+        run {
             AndroidView(
                 factory = { mapView },
                 modifier = Modifier.fillMaxSize(),
@@ -262,6 +262,16 @@ fun RadarScreen(
                     mv.invalidate()
                 }
             )
+        }
+
+        // Windy launcher panel drawn over the (still-composed) map.
+        if (mode == RadarMode.WINDY) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xF20F172A))
+            )
+            WindyRadarView(location = location, modifier = Modifier.fillMaxSize())
         }
 
         // Title chip.

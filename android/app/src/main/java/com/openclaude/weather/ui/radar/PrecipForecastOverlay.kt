@@ -88,25 +88,27 @@ class PrecipForecastOverlay : Overlay() {
          * ARGB colour for a precipitation rate (mm/h); 0 (transparent) below threshold.
          * Dark teal->navy ramp like TV radars: light rain teal, heavy rain deep blue/violet.
          */
+        // Vivid, saturated blues (bright cyan -> azure -> royal -> navy) at near-full
+        // opacity, so rain pops against the light-grey basemap like commercial radars.
         fun smoothColor(mmPerHour: Double): Int = when {
             mmPerHour < 0.08 -> 0
-            mmPerHour < 0.3 -> 0xBF28A0BE.toInt()  // teal
-            mmPerHour < 0.7 -> 0xCC1478B4.toInt()  // steel blue
-            mmPerHour < 1.5 -> 0xD90F5096.toInt()  // deep blue
-            mmPerHour < 3.0 -> 0xE30A3270.toInt()  // dark blue
-            mmPerHour < 6.0 -> 0xEB0A1E50.toInt()  // navy
-            mmPerHour < 12.0 -> 0xF11E1450.toInt() // dark indigo
-            else -> 0xF646145A.toInt()             // violet (extreme)
+            mmPerHour < 0.3 -> 0xD200BEE6.toInt()  // bright cyan
+            mmPerHour < 0.7 -> 0xD90096DC.toInt()  // azure
+            mmPerHour < 1.5 -> 0xE0006EC8.toInt()  // vivid blue
+            mmPerHour < 3.0 -> 0xE60046A0.toInt()  // royal blue
+            mmPerHour < 6.0 -> 0xEC0A2878.toInt()  // navy
+            mmPerHour < 12.0 -> 0xF11E1464.toInt() // indigo
+            else -> 0xF6501464.toInt()             // violet (extreme)
         }
 
         /** Opaque swatch colour for the legend. */
         fun legendColor(mmPerHour: Double): Int = when {
-            mmPerHour < 0.3 -> 0xFF28A0BE.toInt()
-            mmPerHour < 1.5 -> 0xFF0F5096.toInt()
-            mmPerHour < 3.0 -> 0xFF0A3270.toInt()
-            mmPerHour < 6.0 -> 0xFF0A1E50.toInt()
-            mmPerHour < 12.0 -> 0xFF1E1450.toInt()
-            else -> 0xFF46145A.toInt()
+            mmPerHour < 0.3 -> 0xFF00BEE6.toInt()
+            mmPerHour < 1.5 -> 0xFF006EC8.toInt()
+            mmPerHour < 3.0 -> 0xFF0046A0.toInt()
+            mmPerHour < 6.0 -> 0xFF0A2878.toInt()
+            mmPerHour < 12.0 -> 0xFF1E1464.toInt()
+            else -> 0xFF501464.toInt()
         }
     }
 }
