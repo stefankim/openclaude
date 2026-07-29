@@ -11,3 +11,6 @@ app/build/
 build/
 *.apk
 *.aab
+# Release signing secrets — never commit
+keystore.properties
+keystore/

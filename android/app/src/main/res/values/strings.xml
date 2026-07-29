@@ -103,6 +103,10 @@
     <string name="widget_pick_location">Show weather for</string>
     <string name="widget_follow_app">Follow app selection</string>
 
+    <!-- About / attribution (license requirements) -->
+    <string name="about">About</string>
+    <string name="data_credits">Weather data: Open-Meteo.com (CC BY 4.0) · Radar: RainViewer · Warnings: MeteoAlarm (EUMETNET) · Map: Esri · © OpenStreetMap contributors</string>
+
     <!-- Weather conditions (WMO codes) -->
     <string name="cond_clear">Clear sky</string>
     <string name="cond_mostly_clear">Mostly clear</string>

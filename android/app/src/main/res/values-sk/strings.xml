@@ -95,6 +95,9 @@
     <string name="widget_pick_location">Zobraziť počasie pre</string>
     <string name="widget_follow_app">Podľa výberu v aplikácii</string>
 
+    <string name="about">O aplikácii</string>
+    <string name="data_credits">Údaje o počasí: Open-Meteo.com (CC BY 4.0) · Radar: RainViewer · Výstrahy: MeteoAlarm (EUMETNET) · Mapa: Esri · © prispievatelia OpenStreetMap</string>
+
     <string name="cond_clear">Jasno</string>
     <string name="cond_mostly_clear">Prevažne jasno</string>
     <string name="cond_partly_cloudy">Polooblačno</string>

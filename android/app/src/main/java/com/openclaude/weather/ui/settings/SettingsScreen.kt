@@ -147,6 +147,14 @@ fun SettingsScreen(
             onSelect = onSetAnimIntensity
         )
 
+        Spacer(Modifier.height(24.dp))
+        SectionTitle(stringResource(R.string.about))
+        Text(
+            stringResource(R.string.data_credits),
+            color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+
         Spacer(Modifier.height(32.dp))
     }
 
