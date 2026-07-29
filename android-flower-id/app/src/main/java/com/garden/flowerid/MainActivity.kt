@@ -450,69 +450,32 @@ class MainActivity : AppCompatActivity() {
         descriptionText.visibility = View.VISIBLE
         learnMoreLink.visibility = View.GONE
 
-        // Try the app language's Wikipedia first, then fall back to English
-        val attempts = if (appLanguage() == "sk") listOf(
-            "sk" to commonName, "sk" to scientificName,
-            "en" to commonName, "en" to scientificName
-        ) else listOf(
-            "en" to commonName, "en" to scientificName
-        )
-        tryFetchDescription(attempts, 0)
-    }
-
-    private fun tryFetchDescription(attempts: List<Pair<String, String>>, index: Int) {
-        if (index >= attempts.size) {
-            runOnUiThread { descriptionText.visibility = View.GONE }
-            return
-        }
-        val (lang, title) = attempts[index]
-        fetchWikipediaSummary(lang, title) { found ->
-            if (!found) tryFetchDescription(attempts, index + 1)
-        }
-    }
-
-    private fun fetchWikipediaSummary(lang: String, title: String, onDone: (Boolean) -> Unit) {
-        val url = "https://$lang.wikipedia.org/api/rest_v1/page/summary/" +
-            Uri.encode(title.replace(" ", "_"))
-        val request = Request.Builder()
-            .url(url)
-            .header("User-Agent", "GardenWeedID-Android/1.0")
-            .build()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: okhttp3.Call, e: IOException) = onDone(false)
-
-            override fun onResponse(call: okhttp3.Call, response: Response) {
-                if (!response.isSuccessful) {
-                    onDone(false)
-                    return
+        val lang = appLanguage()
+        val isKnownWeed = currentWeedInfo != null
+        WikipediaHelper.fetch(client, lang, scientificName, commonName) { result ->
+            runOnUiThread {
+                if (result == null) {
+                    descriptionText.visibility = View.GONE
+                    return@runOnUiThread
                 }
-                try {
-                    val obj = JsonParser.parseString(response.body?.string()).asJsonObject
-                    val extract = obj.get("extract")?.asString
-                    val pageUrl = obj.getAsJsonObject("content_urls")
-                        ?.getAsJsonObject("desktop")?.get("page")?.asString
-                    if (extract.isNullOrBlank()) {
-                        onDone(false)
-                        return
+                currentDescription = result.extract
+                currentWikipediaUrl = result.pageUrl
+                descriptionText.text = result.extract
+                descriptionText.visibility = View.VISIBLE
+                if (result.pageUrl != null) {
+                    learnMoreLink.visibility = View.VISIBLE
+                    learnMoreLink.setOnClickListener {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(result.pageUrl)))
                     }
-                    runOnUiThread {
-                        currentDescription = extract
-                        currentWikipediaUrl = pageUrl
-                        descriptionText.text = extract
-                        if (pageUrl != null) {
-                            learnMoreLink.visibility = View.VISIBLE
-                            learnMoreLink.setOnClickListener {
-                                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(pageUrl)))
-                            }
-                        }
-                    }
-                    onDone(true)
-                } catch (e: Exception) {
-                    onDone(false)
+                }
+                // For plants not in the weed database, use the localized Wikipedia
+                // article title as the name (weeds already show their database name).
+                if (!isKnownWeed && result.lang == lang && result.title.isNotBlank()) {
+                    plantNameText.text = result.title
+                    currentCommonName = result.title
                 }
             }
-        })
+        }
     }
 
     private fun toggleFavorite() {

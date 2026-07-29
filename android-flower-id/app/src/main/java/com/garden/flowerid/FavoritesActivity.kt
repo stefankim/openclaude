@@ -12,13 +12,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonParser
-import okhttp3.Call
-import okhttp3.Callback
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import java.io.IOException
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -141,8 +135,8 @@ class FavoritesActivity : AppCompatActivity() {
             }
         }
 
-        // …then refresh it from Wikipedia in the current app language.
-        refreshDescription(favorite, description, learnMoreLink)
+        // …then refresh name and description from Wikipedia in the current app language.
+        refreshFromWikipedia(favorite, info != null, commonName, description, learnMoreLink)
 
         AlertDialog.Builder(this)
             .setView(view)
@@ -150,71 +144,32 @@ class FavoritesActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun refreshDescription(
+    private fun refreshFromWikipedia(
         favorite: Favorite,
+        isKnownWeed: Boolean,
+        nameView: TextView,
         description: TextView,
         learnMoreLink: TextView
     ) {
-        // Scientific name resolves across languages more reliably than an
-        // English common name, so try it first.
-        val titles = listOfNotNull(favorite.scientificName, favorite.commonName)
-            .filter { it.isNotBlank() }
-            .distinct()
-        val attempts = if (appLanguage() == "sk")
-            titles.map { "sk" to it } + titles.map { "en" to it }
-        else
-            titles.map { "en" to it }
-        tryFetch(attempts, 0, description, learnMoreLink)
-    }
-
-    private fun tryFetch(
-        attempts: List<Pair<String, String>>,
-        index: Int,
-        description: TextView,
-        learnMoreLink: TextView
-    ) {
-        if (index >= attempts.size) return
-        val (lang, title) = attempts[index]
-        val url = "https://$lang.wikipedia.org/api/rest_v1/page/summary/" +
-            Uri.encode(title.replace(" ", "_"))
-        val request = Request.Builder()
-            .url(url)
-            .header("User-Agent", "GardenWeedID-Android/1.0")
-            .build()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) =
-                tryFetch(attempts, index + 1, description, learnMoreLink)
-
-            override fun onResponse(call: Call, response: Response) {
-                if (!response.isSuccessful) {
-                    tryFetch(attempts, index + 1, description, learnMoreLink)
-                    return
+        val lang = appLanguage()
+        WikipediaHelper.fetch(client, lang, favorite.scientificName, favorite.commonName) { result ->
+            if (result == null) return@fetch
+            runOnUiThread {
+                description.text = result.extract
+                description.visibility = View.VISIBLE
+                if (result.pageUrl != null) {
+                    learnMoreLink.visibility = View.VISIBLE
+                    learnMoreLink.setOnClickListener {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(result.pageUrl)))
+                    }
                 }
-                try {
-                    val obj = JsonParser.parseString(response.body?.string()).asJsonObject
-                    val extract = obj.get("extract")?.asString
-                    val pageUrl = obj.getAsJsonObject("content_urls")
-                        ?.getAsJsonObject("desktop")?.get("page")?.asString
-                    if (extract.isNullOrBlank()) {
-                        tryFetch(attempts, index + 1, description, learnMoreLink)
-                        return
-                    }
-                    runOnUiThread {
-                        description.text = extract
-                        description.visibility = View.VISIBLE
-                        if (pageUrl != null) {
-                            learnMoreLink.visibility = View.VISIBLE
-                            learnMoreLink.setOnClickListener {
-                                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(pageUrl)))
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    tryFetch(attempts, index + 1, description, learnMoreLink)
+                // For plants not in the weed database, use the localized Wikipedia
+                // article title as the name (weeds already show their database name).
+                if (!isKnownWeed && result.lang == lang && result.title.isNotBlank()) {
+                    nameView.text = result.title
                 }
             }
-        })
+        }
     }
 
     private fun updateEmptyState(isEmpty: Boolean) {
