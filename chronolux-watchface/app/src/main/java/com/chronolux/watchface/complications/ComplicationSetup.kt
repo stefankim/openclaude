@@ -13,10 +13,24 @@ import androidx.wear.watchface.complications.rendering.ComplicationDrawable
 import androidx.wear.watchface.style.CurrentUserStyleRepository
 import com.chronolux.watchface.R
 
+/**
+ * Stable identifiers for the complication slots.
+ *
+ * PERSISTENCE CONTRACT: Wear OS persists the user's chosen complication data
+ * source ("selected app") per `(watch face component, instance id, slot id)`.
+ * That mapping is what lets a selection survive switching to another watch
+ * face and back. These ids MUST therefore stay constant across app versions —
+ * renumbering a slot orphans every selection previously made for it. New slots
+ * may be added with new ids, but existing ones are frozen. `ComplicationIdsTest`
+ * guards this.
+ */
 object ComplicationIds {
     const val LEFT = 100
     const val RIGHT = 101
     const val BOTTOM = 102
+
+    /** All slot ids, for iteration and validation. */
+    val ALL = listOf(LEFT, RIGHT, BOTTOM)
 }
 
 private val SUPPORTED_TYPES = listOf(
