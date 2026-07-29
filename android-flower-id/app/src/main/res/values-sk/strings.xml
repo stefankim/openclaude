@@ -84,4 +84,15 @@
     <string name="share_result">Zdieľať</string>
     <string name="share_weed_line">Burina — odstráňte ju</string>
     <string name="share_safe_line">Nie je burina — nechajte ju</string>
+
+    <!-- Backup / export -->
+    <string name="export_favorites">Exportovať / zálohovať</string>
+    <string name="import_favorites">Importovať / obnoviť</string>
+    <string name="export_success">Obľúbené boli zálohované do súboru</string>
+    <string name="export_empty">Žiadne obľúbené na export</string>
+    <string name="export_failed">Obľúbené sa nepodarilo exportovať</string>
+    <string name="import_success">Obnovených položiek: %1$d</string>
+    <string name="import_none">Žiadne nové obľúbené na obnovenie</string>
+    <string name="import_failed">Tento záložný súbor sa nepodarilo načítať</string>
+    <string name="export_filename">garden-weed-favorites.json</string>
 </resources>

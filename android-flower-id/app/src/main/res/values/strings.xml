@@ -84,4 +84,15 @@
     <string name="share_result">Share</string>
     <string name="share_weed_line">Weed — remove it</string>
     <string name="share_safe_line">Not a weed — keep it</string>
+
+    <!-- Backup / export -->
+    <string name="export_favorites">Export / back up</string>
+    <string name="import_favorites">Import / restore</string>
+    <string name="export_success">Favorites backed up to file</string>
+    <string name="export_empty">No favorites to export</string>
+    <string name="export_failed">Could not export favorites</string>
+    <string name="import_success">Restored %1$d favorite(s)</string>
+    <string name="import_none">No new favorites to restore</string>
+    <string name="import_failed">Could not read that backup file</string>
+    <string name="export_filename">garden-weed-favorites.json</string>
 </resources>

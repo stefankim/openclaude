@@ -4,10 +4,14 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -20,11 +24,48 @@ class FavoritesActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var emptyText: TextView
+    private val favorites = mutableListOf<Favorite>()
+    private lateinit var adapter: FavoritesAdapter
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(20, TimeUnit.SECONDS)
         .build()
+
+    private val exportLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: Uri? ->
+        if (uri == null) return@registerForActivityResult
+        try {
+            val json = FavoritesStore.exportToJson(this)
+            contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray()) }
+            Toast.makeText(this, R.string.export_success, Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, R.string.export_failed, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private val importLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri == null) return@registerForActivityResult
+        try {
+            val json = contentResolver.openInputStream(uri)?.use {
+                it.readBytes().toString(Charsets.UTF_8)
+            } ?: throw IllegalStateException("empty")
+            val added = FavoritesStore.importFromJson(this, json)
+            if (added > 0) {
+                reloadFavorites()
+                Toast.makeText(
+                    this, getString(R.string.import_success, added), Toast.LENGTH_LONG
+                ).show()
+            } else {
+                Toast.makeText(this, R.string.import_none, Toast.LENGTH_LONG).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, R.string.import_failed, Toast.LENGTH_LONG).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,10 +80,10 @@ class FavoritesActivity : AppCompatActivity() {
         emptyText = findViewById(R.id.emptyFavoritesText)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        val favorites = FavoritesStore.getAll(this).toMutableList()
+        favorites.addAll(FavoritesStore.getAll(this))
         updateEmptyState(favorites.isEmpty())
 
-        recyclerView.adapter = FavoritesAdapter(
+        adapter = FavoritesAdapter(
             favorites,
             onRemove = { removed ->
                 FavoritesStore.remove(this, removed.scientificName)
@@ -50,6 +91,37 @@ class FavoritesActivity : AppCompatActivity() {
             },
             onClick = { favorite -> showDetail(favorite) }
         )
+        recyclerView.adapter = adapter
+    }
+
+    private fun reloadFavorites() {
+        favorites.clear()
+        favorites.addAll(FavoritesStore.getAll(this))
+        adapter.notifyDataSetChanged()
+        updateEmptyState(favorites.isEmpty())
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.favorites_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_export -> {
+                if (FavoritesStore.count(this) == 0) {
+                    Toast.makeText(this, R.string.export_empty, Toast.LENGTH_SHORT).show()
+                } else {
+                    exportLauncher.launch(getString(R.string.export_filename))
+                }
+                true
+            }
+            R.id.action_import -> {
+                importLauncher.launch("application/json")
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 
     private fun appLanguage(): String =
