@@ -128,3 +128,19 @@ data class GridHourly(
     @Json(name = "time") val time: List<Long> = emptyList(),
     @Json(name = "precipitation") val precipitation: List<Double?> = emptyList()
 )
+
+// ---- SHMU radar (Slovak Hydrometeorological Institute) ----
+
+data class ShmuRadarProduct(
+    @Json(name = "product") val product: String = "",
+    @Json(name = "product_name") val productName: String? = null,
+    @Json(name = "product_desc") val productDesc: String? = null,
+    @Json(name = "base_url") val baseUrl: String = "",
+    @Json(name = "items") val items: List<ShmuRadarItem> = emptyList()
+)
+
+data class ShmuRadarItem(
+    @Json(name = "fname") val fname: String = "",
+    /** Unix seconds, UTC. */
+    @Json(name = "dt_utc") val dtUtc: Long = 0
+)

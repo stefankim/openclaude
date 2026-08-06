@@ -47,6 +47,9 @@
     <string name="radar_live_sub">Živý · posledné 2 h + nowcast</string>
     <string name="radar_forecast_sub">Predpoveď · ďalšie 3 dni (Open-Meteo)</string>
     <string name="radar_windy_sub">Predpoveď · Windy</string>
+    <string name="radar_shmu">SHMÚ</string>
+    <string name="radar_shmu_sub">Radar SHMÚ · posledné 2 h (krok 5 min)</string>
+    <string name="radar_shmu_credit">Radarové snímky © SHMÚ (shmu.sk)</string>
     <string name="tap_retry">Ťuknutím skúsiť znova</string>
 
     <string name="search_city">Hľadať mesto…</string>

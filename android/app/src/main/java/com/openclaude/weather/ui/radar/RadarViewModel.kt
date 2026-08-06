@@ -17,6 +17,14 @@ data class RadarUiState(
     val error: String? = null
 )
 
+data class ShmuState(
+    val loading: Boolean = false,
+    val frames: List<WeatherRepository.ShmuFrame> = emptyList(),
+    /** Decoded frame images, keyed by frame url. Filled progressively. */
+    val bitmaps: Map<String, android.graphics.Bitmap> = emptyMap(),
+    val error: String? = null
+)
+
 data class PrecipForecastState(
     val loading: Boolean = false,
     val grid: WeatherRepository.PrecipGrid? = null,
@@ -33,7 +41,36 @@ class RadarViewModel(private val repository: WeatherRepository) : ViewModel() {
 
     private var lastForecastKey: String? = null
 
+    private val _shmu = MutableStateFlow(ShmuState())
+    val shmu: StateFlow<ShmuState> = _shmu.asStateFlow()
+    private var shmuLoaded = false
+
     init { load() }
+
+    /** Loads SHMÚ radar frames and decodes their images (oldest first). */
+    fun loadShmu(force: Boolean = false) {
+        if (shmuLoaded && !force && _shmu.value.frames.isNotEmpty()) return
+        shmuLoaded = true
+        _shmu.value = ShmuState(loading = true)
+        viewModelScope.launch {
+            runCatching { repository.shmuFrames() }
+                .onSuccess { frames ->
+                    _shmu.value = ShmuState(loading = false, frames = frames)
+                    // Decode progressively so the first frame appears quickly.
+                    val decoded = mutableMapOf<String, android.graphics.Bitmap>()
+                    frames.forEach { f ->
+                        repository.shmuBitmap(f.url)?.let { bmp ->
+                            decoded[f.url] = bmp
+                            _shmu.value = _shmu.value.copy(bitmaps = decoded.toMap())
+                        }
+                    }
+                }
+                .onFailure {
+                    shmuLoaded = false
+                    _shmu.value = ShmuState(error = it.message ?: "SHMÚ radar unavailable")
+                }
+        }
+    }
 
     /** Loads the native precipitation forecast grid centred on the given point (cached). */
     fun loadForecast(lat: Double, lon: Double, fine: Boolean = false) {
@@ -64,7 +101,7 @@ class RadarViewModel(private val repository: WeatherRepository) : ViewModel() {
                         // Scheme 8 (Dark Sky palette): saturated teal->dark blue, like TV radars.
                         RadarFrameUi(
                             time = f.time,
-                            tileUrlTemplate = "${data.host}${f.path}/256/%d/%d/%d/8/1_1.png",
+                            tileUrlTemplate = "${data.host}${f.path}/512/%d/%d/%d/8/1_1.png",
                             isForecast = index >= data.nowcastFrom
                         )
                     }

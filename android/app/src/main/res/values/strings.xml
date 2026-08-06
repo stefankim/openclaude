@@ -51,6 +51,9 @@
     <string name="radar_live_sub">Live · last 2 h + nowcast</string>
     <string name="radar_forecast_sub">Forecast · next 3 days (Open-Meteo)</string>
     <string name="radar_windy_sub">Forecast · Windy</string>
+    <string name="radar_shmu">SHMÚ</string>
+    <string name="radar_shmu_sub">SHMÚ radar · last 2 h (5 min steps)</string>
+    <string name="radar_shmu_credit">Radar imagery © SHMÚ (shmu.sk)</string>
     <string name="tap_retry">Tap to retry</string>
 
     <!-- Places -->

@@ -2,6 +2,7 @@ package com.openclaude.weather.data.remote
 
 import okhttp3.ResponseBody
 import retrofit2.http.GET
+import retrofit2.http.Headers
 import retrofit2.http.Query
 import retrofit2.http.Url
 
@@ -99,4 +100,18 @@ interface AirQualityApi {
 interface FeedApi {
     @GET
     suspend fun fetch(@Url url: String): ResponseBody
+}
+
+/**
+ * SHMÚ (Slovak Hydrometeorological Institute) radar. Native Slovak radar composites at
+ * 5-minute resolution — the same imagery shmu.sk shows. Products include maximum column
+ * reflectivity, 2 km CAPPI, 1 h rainfall totals and lightning.
+ *
+ * NOTE: SHMÚ's terms restrict reuse of their imagery to personal use unless they grant
+ * consent, so this source is opt-in and clearly attributed in the UI.
+ */
+interface ShmuApi {
+    @GET("api/v1/meteo/getradardata")
+    @Headers("X-Requested-With: XMLHttpRequest", "Referer: https://www.shmu.sk/sk/?page=2322")
+    suspend fun radarData(): List<ShmuRadarProduct>
 }

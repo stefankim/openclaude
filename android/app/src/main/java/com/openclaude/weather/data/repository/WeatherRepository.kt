@@ -213,6 +213,33 @@ class WeatherRepository(private val appContext: Context) {
             grid
         }
 
+    // ---- SHMU radar (native Slovak composites, 5-minute resolution) ----
+
+    /** One SHMU radar frame: absolute image URL + observation time (UTC seconds). */
+    data class ShmuFrame(val url: String, val timeUtc: Long)
+
+    /**
+     * Latest SHMU frames for a product, oldest first. [count] frames back from now
+     * (5 min apart), so 24 frames is the last 2 hours.
+     */
+    suspend fun shmuFrames(product: String = "data.cmax", count: Int = 24): List<ShmuFrame> =
+        withContext(Dispatchers.IO) {
+            val products = Network.shmuApi.radarData()
+            val p = products.firstOrNull { it.product == product } ?: return@withContext emptyList()
+            p.items.take(count)
+                .map { ShmuFrame("https://www.shmu.sk${p.baseUrl}${it.fname}", it.dtUtc) }
+                .reversed() // API returns newest first; play oldest -> newest
+        }
+
+    /** Downloads one radar frame image. */
+    suspend fun shmuBitmap(url: String): android.graphics.Bitmap? = withContext(Dispatchers.IO) {
+        runCatching {
+            Network.feedApi.fetch(url).byteStream().use {
+                android.graphics.BitmapFactory.decodeStream(it)
+            }
+        }.getOrNull()
+    }
+
     data class RadarData(val host: String, val frames: List<RadarFrame>, val nowcastFrom: Int)
 
     suspend fun radarFrames(): RadarData = withContext(Dispatchers.IO) {

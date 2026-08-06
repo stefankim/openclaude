@@ -45,6 +45,10 @@ object Network {
         retrofit("https://air-quality-api.open-meteo.com/").create(AirQualityApi::class.java)
     }
 
+    val shmuApi: ShmuApi by lazy {
+        retrofit("https://www.shmu.sk/").create(ShmuApi::class.java)
+    }
+
     val feedApi: FeedApi by lazy {
         // Base URL is unused (absolute @Url), but Retrofit requires one.
         retrofit("https://feeds.meteoalarm.org/").create(FeedApi::class.java)

@@ -58,7 +58,7 @@ import org.osmdroid.views.overlay.TilesOverlay
 
 /** RainViewer tile source: formats a "{z}/{x}/{y}" template into the precipitation tile URL. */
 private class RainViewerTileSource(name: String, private val template: String) :
-    OnlineTileSourceBase(name, 0, 12, 256, ".png", arrayOf("")) {
+    OnlineTileSourceBase(name, 0, 12, 512, ".png", arrayOf("")) {
     override fun getTileURLString(pMapTileIndex: Long): String {
         val zoom = MapTileIndex.getZoom(pMapTileIndex)
         val x = MapTileIndex.getX(pMapTileIndex)
@@ -87,7 +87,8 @@ private val EsriLightGray = object : OnlineTileSourceBase(
 }
 
 private enum class RadarMode(val labelRes: Int) {
-    LIVE(R.string.radar_live), FORECAST(R.string.radar_forecast), WINDY(R.string.radar_windy)
+    LIVE(R.string.radar_live), SHMU(R.string.radar_shmu),
+    FORECAST(R.string.radar_forecast), WINDY(R.string.radar_windy)
 }
 
 /** Coarser relative label for forecast hours, e.g. "now", "in 5 h", "in 2 days". */
@@ -117,9 +118,11 @@ private fun relativeLabel(epochSeconds: Long): String {
 fun RadarScreen(
     state: RadarUiState,
     forecast: PrecipForecastState,
+    shmu: ShmuState,
     location: SavedLocation?,
     onRetry: () -> Unit,
-    onLoadForecast: (Double, Double, Boolean) -> Unit
+    onLoadForecast: (Double, Double, Boolean) -> Unit,
+    onLoadShmu: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -132,6 +135,22 @@ fun RadarScreen(
     var forecastHour by remember { mutableStateOf(0) }
     var forecastPlaying by remember { mutableStateOf(false) }
     var fineZoom by remember { mutableStateOf(false) }
+    var shmuIndex by remember { mutableStateOf(0) }
+    var shmuPlaying by remember { mutableStateOf(true) }
+
+    // Fetch SHMU frames on first entry to that mode.
+    LaunchedEffect(mode) { if (mode == RadarMode.SHMU) onLoadShmu() }
+
+    // SHMU animation: only step onto frames whose image has already decoded.
+    LaunchedEffect(shmuPlaying, mode, shmu.bitmaps.size) {
+        if (mode != RadarMode.SHMU) return@LaunchedEffect
+        val ready = shmu.frames.count { shmu.bitmaps.containsKey(it.url) }
+        if (ready == 0) return@LaunchedEffect
+        while (shmuPlaying) {
+            delay(500)
+            shmuIndex = (shmuIndex + 1) % ready
+        }
+    }
 
     // Load the native forecast grid when entering Forecast mode, changing location, or
     // crossing the zoom threshold (finer grid when zoomed in).
@@ -201,6 +220,7 @@ fun RadarScreen(
     // instead of stuttering through re-downloads. Rebuilt when a new frame set arrives.
     val frameOverlays = remember(state.frames) { mutableMapOf<Long, TilesOverlay>() }
     val precipOverlay = remember { PrecipForecastOverlay() }
+    val shmuOverlay = remember { ShmuRadarOverlay() }
     val locationMarker = remember {
         Marker(mapView).apply {
             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
@@ -235,6 +255,7 @@ fun RadarScreen(
                     when (mode) {
                         RadarMode.LIVE -> {
                             mv.overlays.remove(precipOverlay)
+                            mv.overlays.remove(shmuOverlay)
                             // Drop overlays that belong to an outdated frame set.
                             mv.overlays.removeAll { it is TilesOverlay && it !in frameOverlays.values }
                             val frame = state.frames.getOrNull(frameIndex) ?: return@AndroidView
@@ -250,9 +271,19 @@ fun RadarScreen(
                             if (!mv.overlays.contains(overlay)) mv.overlays.add(0, overlay)
                             frameOverlays.values.forEach { it.setEnabled(it === overlay) }
                         }
+                        RadarMode.SHMU -> {
+                            // Native SHMU composite image; hide the other precipitation layers.
+                            frameOverlays.values.forEach { it.setEnabled(false) }
+                            mv.overlays.remove(precipOverlay)
+                            val ready = shmu.frames.filter { shmu.bitmaps.containsKey(it.url) }
+                            shmuOverlay.bitmap = ready.getOrNull(shmuIndex.coerceIn(0, (ready.size - 1).coerceAtLeast(0)))
+                                ?.let { shmu.bitmaps[it.url] }
+                            if (!mv.overlays.contains(shmuOverlay)) mv.overlays.add(0, shmuOverlay)
+                        }
                         RadarMode.FORECAST -> {
                             // Native Open-Meteo precipitation cells; hide the RainViewer layers.
                             frameOverlays.values.forEach { it.setEnabled(false) }
+                            mv.overlays.remove(shmuOverlay)
                             precipOverlay.grid = forecast.grid
                             precipOverlay.hourIndex = forecastHour
                             if (!mv.overlays.contains(precipOverlay)) mv.overlays.add(0, precipOverlay)
@@ -292,6 +323,7 @@ fun RadarScreen(
             Text(
                 text = when (mode) {
                     RadarMode.LIVE -> stringResource(R.string.radar_live_sub)
+                    RadarMode.SHMU -> stringResource(R.string.radar_shmu_sub)
                     RadarMode.FORECAST -> stringResource(R.string.radar_forecast_sub)
                     RadarMode.WINDY -> stringResource(R.string.radar_windy_sub)
                 },
@@ -321,7 +353,7 @@ fun RadarScreen(
                         .clip(RoundedCornerShape(16.dp))
                         .background(if (selected) Color.White else Color.Transparent)
                         .clickable { mode = m }
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                        .padding(horizontal = 9.dp, vertical = 6.dp)
                 )
             }
         }
@@ -341,6 +373,63 @@ fun RadarScreen(
                         stringResource(R.string.tap_retry),
                         color = Color(0xFF9FD0FF),
                         modifier = Modifier.padding(8.dp).clip(RoundedCornerShape(8.dp)).clickable { onRetry() }
+                    )
+                }
+            }
+        }
+
+        if (mode == RadarMode.SHMU) {
+            val ready = shmu.frames.filter { shmu.bitmaps.containsKey(it.url) }
+            when {
+                shmu.loading && ready.isEmpty() -> CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center), color = Color.White
+                )
+                shmu.error != null -> Text(
+                    shmu.error, color = Color.White,
+                    modifier = Modifier.align(Alignment.Center).clickable { onLoadShmu() }
+                )
+            }
+            if (ready.isNotEmpty()) {
+                val frame = ready.getOrNull(shmuIndex.coerceIn(0, ready.lastIndex))
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xCC0F172A))
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { shmuPlaying = !shmuPlaying }) {
+                            Icon(
+                                if (shmuPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                contentDescription = null, tint = Color.White
+                            )
+                        }
+                        Column(modifier = Modifier.width(120.dp)) {
+                            Text(
+                                frame?.let { Format.clock(it.timeUtc * 1000) } ?: "",
+                                color = Color.White, fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                frame?.let { relativeLabel(it.timeUtc) } ?: "",
+                                color = Color(0xFF9FD0FF), fontSize = 12.sp
+                            )
+                        }
+                        Slider(
+                            value = shmuIndex.coerceIn(0, ready.lastIndex).toFloat(),
+                            onValueChange = {
+                                shmuPlaying = false
+                                shmuIndex = it.toInt().coerceIn(0, ready.lastIndex)
+                            },
+                            valueRange = 0f..ready.lastIndex.coerceAtLeast(1).toFloat(),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Text(
+                        stringResource(R.string.radar_shmu_credit),
+                        color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp
                     )
                 }
             }
